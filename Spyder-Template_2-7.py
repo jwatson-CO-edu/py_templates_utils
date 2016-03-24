@@ -21,7 +21,7 @@ localize() # You can now load local modules!
 # ~ Standard Libraries ~
 import math
 from math import sqrt, ceil, sin, cos, tan, atan2, radians
-from os import linesep
+import os
 import datetime
 # ~ Special Libraries ~
 import matplotlib.pyplot as plt
@@ -29,7 +29,8 @@ import numpy as np
 # ~~ Constants , Shortcuts , Aliases ~~
 EPSILON = 1e-7
 infty = 1e309 # URL: http://stackoverflow.com/questions/1628026/python-infinity-any-caveats#comment31860436_1628026
-endl = linesep
+endl = os.linesep
+SOURCEDIR = os.path.dirname(os.path.abspath(__file__)) # URL: http://stackoverflow.com/a/7783326
 
 # ~ Helper Functions ~
 
