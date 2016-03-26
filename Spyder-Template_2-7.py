@@ -30,7 +30,7 @@ import numpy as np
 EPSILON = 1e-7
 infty = 1e309 # URL: http://stackoverflow.com/questions/1628026/python-infinity-any-caveats#comment31860436_1628026
 endl = os.linesep
-SOURCEDIR = os.path.dirname(os.path.abspath(__file__)) # URL: http://stackoverflow.com/a/7783326
+SOURCEDIR = os.path.dirname(os.path.abspath(__file__)) # URL, dir containing source file: http://stackoverflow.com/a/7783326
 
 # ~ Helper Functions ~
 
@@ -43,7 +43,7 @@ def sep(title = ""):
     LINE = '======'
     print LINE + ' ' + title + ' ' + LINE
     
-nowTimeStamp = lambda: datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+nowTimeStamp = lambda: datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') # Return a string of the date and time
 
 # == End Init ==
 
