@@ -1,4 +1,6 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# Template Version: 2016-04-15
 """
 FILENAME.py , Built on Spyder for Python 2.7
 James Watson, YYYY MONTHNAME
@@ -6,6 +8,7 @@ A ONE LINE DESCRIPTION OF THE FILE
 
 """
 # == Init Environment ==
+from __future__ import division # Future imports must be called before everything else!
 
 # ~ PATH Changes ~ 
 def localize(): # For some reason this is needed in Windows 10 Spyder (Py 2.7)

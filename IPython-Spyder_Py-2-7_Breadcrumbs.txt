@@ -1,0 +1,11 @@
+== ipython_config.py ==
+
+# Configuration file for ipython.
+c = get_config()
+
+# executes the line in brackets on program launch
+c.InteractiveShellApp.exec_lines = ['from __future__ import division']
+
+== Spyder for Windows ==
+Does not like the "python_config.py" file? Specifying a stertup file causes console to puke on startup.
+Tools --> Preferences --> IPython Console --> Startup --> Run code: from __future__ import division

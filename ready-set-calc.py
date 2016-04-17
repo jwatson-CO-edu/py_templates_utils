@@ -5,6 +5,7 @@ James Watson, 2015 December
 Run this file to use Spyder as a calculator
 
   == LOG ==
+2016-04-17: Copied 'quadroots' from "6200_HW_Help.py"
 2016-03-27: Wrote 'avg' and 'accumulate', tested OK
 2016-03-26: Wrote 'degrees' versions of trig functions
 
@@ -13,6 +14,7 @@ Run this file to use Spyder as a calculator
 
 """
 # == Init Environment ==
+from __future__ import division # Python 3 division: Typically you call this from the iPython config file
 
 # ~ PATH Changes ~ 
 def localize():
@@ -45,6 +47,13 @@ def eq(op1, op2):
 
 # == End Init ==
 
+# == Algebra ==
+
+def quadroots(a,b,c):
+    """ Return roots of quadratic function a * (x ** 2) + b * (x) + c """
+    return np.roots([a,b,c])
+
+# == End Algebra ==
 
 # == Statistics and Combinatorics ==
 
@@ -53,7 +62,7 @@ def nCr(n,r):
     return factorial(n) / ( factorial(r) * factorial(n-r) )
     
 def avg(*args):
-    """ Average of args, where args can be a list or nested lists """
+    """ Average of args, where args can be numbers, a list, or nested lists """
     total, N = accumulate(args)
     return float(total) / N
     
