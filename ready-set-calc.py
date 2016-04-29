@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 ready-set-calc.py , Built on Spyder for Python 2.7
