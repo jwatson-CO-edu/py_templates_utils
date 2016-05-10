@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# Template Version: 2016-05-10
 """
 FILENAME.py , Built on Spyder for Python 2.7
 James Watson, YYYY MONTHNAME
 A ONE LINE DESCRIPTION OF THE FILE
 
 """
-# == Init Environment ==================================================================================================
-from __future__ import division
+# == Init Environment ==
+from __future__ import division # Future imports must be called before everything else!
 
 # ~ PATH Changes ~ 
 def localize(): # For some reason this is needed in Windows 10 Spyder (Py 2.7)
@@ -23,7 +24,7 @@ localize() # You can now load local modules!
 # ~ Standard Libraries ~
 import math
 from math import sqrt, ceil, sin, cos, tan, atan2, radians
-from os import linesep
+import os
 import datetime
 # ~ Special Libraries ~
 import matplotlib.pyplot as plt
@@ -31,7 +32,8 @@ import numpy as np
 # ~~ Constants , Shortcuts , Aliases ~~
 EPSILON = 1e-7
 infty = 1e309 # URL: http://stackoverflow.com/questions/1628026/python-infinity-any-caveats#comment31860436_1628026
-endl = linesep
+endl = os.linesep
+SOURCEDIR = os.path.dirname(os.path.abspath(__file__)) # URL, dir containing source file: http://stackoverflow.com/a/7783326
 
 # ~ Helper Functions ~
 
@@ -44,6 +46,7 @@ def sep(title = ""):
     LINE = '======'
     print LINE + ' ' + title + ' ' + LINE
     
-nowTimeStamp = lambda: datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+nowTimeStamp = lambda: datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') # Return a string of the date and time down to second
 
-# == End Init ==========================================================================================================
+# == End Init ==
+
