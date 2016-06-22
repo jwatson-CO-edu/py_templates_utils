@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Template Version: 2016-06-15
+# Template Version: 2016-06-22
 
 # ~~ Future First ~~
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
@@ -44,9 +44,9 @@ def eq(op1, op2):
     """ Return true if op1 and op2 are close enough """
     return abs(op1 - op2) <= EPSILON
     
-def sep(title = ""):
+def sep(title = "", char = '=', width = 6):
     """ Print a separating title card for debug """
-    LINE = '======'
+    LINE = width*char
     print LINE + ' ' + title + ' ' + LINE
     
 nowTimeStamp = lambda: datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') # Return a string of the date and time down to second
