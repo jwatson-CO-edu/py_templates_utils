@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Template Version: 2016-06-14
+# Template Version: 2016-06-15
 
 # ~~ Future First ~~
-from __future__ import division # Future imports must be called before everything else!
+from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
 
 """
 FILENAME.py , Built on Spyder for Python 2.7
@@ -50,6 +50,9 @@ def sep(title = ""):
     print LINE + ' ' + title + ' ' + LINE
     
 nowTimeStamp = lambda: datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') # Return a string of the date and time down to second
+
+# ~ Cleanup ~
+plt.close('all') # clear any figures we may have created before
 
 # == End Init ==
 
