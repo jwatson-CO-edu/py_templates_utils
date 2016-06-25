@@ -1,58 +1,32 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Template Version: 2016-06-22
-
-# ~~ Future First ~~
-from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
+# Template Version: 2016-06-25
 
 """
 FILENAME.py , Built on Spyder for Python 2.7
 James Watson, YYYY MONTHNAME
 A ONE LINE DESCRIPTION OF THE FILE
-
 """
-# == Init Environment ==
 
-# ~ PATH Changes ~ 
-def localize(): # For some reason this is needed in Windows 10 Spyder (Py 2.7)
-    """ Add the current directory to Python path if it is not already there """
-    from sys import path # I know it is bad style to load modules in function
-    import os.path as os_path
-    containerDir = os_path.dirname(__file__)
-    if containerDir not in path:
-        path.append( containerDir )
-
-localize() # You can now load local modules!
-
-# ~ Standard Libraries ~
-import math
-from math import sqrt, ceil, sin, cos, tan, atan2, radians
-import os
-import datetime
-# ~ Special Libraries ~
-import matplotlib.pyplot as plt
-import numpy as np
-# ~~ Constants , Shortcuts , Aliases ~~
-EPSILON = 1e-7
-infty = 1e309 # URL: http://stackoverflow.com/questions/1628026/python-infinity-any-caveats#comment31860436_1628026
-endl = os.linesep
+# == Init Environment ==================================================================================================
+import sys, os.path
 SOURCEDIR = os.path.dirname(os.path.abspath(__file__)) # URL, dir containing source file: http://stackoverflow.com/a/7783326
 
-# ~ Helper Functions ~
+def add_first_valid_dir_to_path(dirList):
+    """ Add the first valid directory in 'dirList' to the system path """
+    # In lieu of actually installing the library, just keep a list of all the places it could be in each environment
+    loadedOne = False
+    for drctry in dirList:
+        if os.path.exists( drctry ):
+            sys.path.append( drctry )
+            print 'Loaded', str(drctry)
+            loadedOne = True
+            break
+    if not loadedOne:
+        print "None of the specified directories were loaded"
+# List all the places where the research environment could be
+add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/researchenv',
+                               '/media/jwatson/FILEPILE/Python/ResearchEnv' ] )
+from ResearchEnv import * # Load the custom environment
 
-def eq(op1, op2):
-    """ Return true if op1 and op2 are close enough """
-    return abs(op1 - op2) <= EPSILON
-    
-def sep(title = "", char = '=', width = 6):
-    """ Print a separating title card for debug """
-    LINE = width*char
-    print LINE + ' ' + title + ' ' + LINE
-    
-nowTimeStamp = lambda: datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') # Return a string of the date and time down to second
-
-# ~ Cleanup ~
-plt.close('all') # clear any figures we may have created before
-
-# == End Init ==
-
+# == End Init ==========================================================================================================
