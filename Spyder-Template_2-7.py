@@ -18,9 +18,12 @@ def add_first_valid_dir_to_path(dirList):
     loadedOne = False
     for drctry in dirList:
         if os.path.exists( drctry ):
-            sys.path.append( drctry )
-            print 'Loaded', str(drctry)
             loadedOne = True
+            if not drctry in sys.path:
+                sys.path.append( drctry )
+                print 'Loaded', str(drctry)
+            else:
+                print str(drctry) , 'was already in the path'
             break
     if not loadedOne:
         print "None of the specified directories were loaded"
