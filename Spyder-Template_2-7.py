@@ -32,4 +32,6 @@ add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/researchenv',
                                '/media/jwatson/FILEPILE/Python/ResearchEnv' ] )
 from ResearchEnv import * # Load the custom environment
 
+localize(__file__) # You can now load local modules!
+
 # == End Init ==========================================================================================================
