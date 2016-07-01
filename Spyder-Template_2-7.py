@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 # Template Version: 2016-06-25
 
+# ~~ Future First ~~
+from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
+
 """
 FILENAME.py , Built on Spyder for Python 2.7
 James Watson, YYYY MONTHNAME
@@ -18,21 +21,15 @@ def add_first_valid_dir_to_path(dirList):
     loadedOne = False
     for drctry in dirList:
         if os.path.exists( drctry ):
+            sys.path.append( drctry )
+            print 'Loaded', str(drctry)
             loadedOne = True
-            if not drctry in sys.path:
-                sys.path.append( drctry )
-                print 'Loaded', str(drctry)
-            else:
-                print str(drctry) , 'was already in the path'
             break
     if not loadedOne:
         print "None of the specified directories were loaded"
 # List all the places where the research environment could be
 add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/researchenv',
-                               '/media/jwatson/FILEPILE/Python/ResearchEnv',
-                               '/media/mawglin/FILEPILE/Python/ResearchEnv'] )
+                               '/media/jwatson/FILEPILE/Python/ResearchEnv' ] )
 from ResearchEnv import * # Load the custom environment
-
-localize(__file__) # You can now load local modules!
 
 # == End Init ==========================================================================================================
