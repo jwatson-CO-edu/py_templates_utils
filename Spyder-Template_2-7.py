@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Template Version: 2016-07-22
+# Template Version: 2016-07-23
 
 # ~~ Future First ~~
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
@@ -20,7 +20,12 @@ def first_valid_dir(dirList):
     rtnDir = False
     for drctry in dirList:
         if os.path.exists( drctry ):
-            rtnDir =  drctry
+            if drctry not in sys.path:
+                sys.path.append( drctry )
+                print 'Loaded:', str(drctry)
+            else:
+                print "Already in sys.path:", str(drctry)
+            loadedOne = True
             break
     return rtnDir
         
