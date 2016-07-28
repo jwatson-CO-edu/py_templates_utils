@@ -20,12 +20,8 @@ def first_valid_dir(dirList):
     rtnDir = False
     for drctry in dirList:
         if os.path.exists( drctry ):
-            if drctry not in sys.path:
-                rtnDir = drctry 
-                print 'Loaded:', str(drctry)
-            else:
-                print "Already in sys.path:", str(drctry)
-            break
+			rtnDir = drctry 
+			break
     return rtnDir
         
 def add_first_valid_dir_to_path(dirList):
