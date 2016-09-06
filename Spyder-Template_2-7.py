@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Template Version: 2016-08-01
+# Template Version: 2016-09-05
 
 # ~~ Future First ~~
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
@@ -11,7 +11,7 @@ James Watson, YYYY MONTHNAME
 A ONE LINE DESCRIPTION OF THE FILE
 """
 
-# == Init Environment ==================================================================================================
+# == Init Environment ========================================================================================================== 140 char ==
 import sys, os.path
 SOURCEDIR = os.path.dirname(os.path.abspath(__file__)) # URL, dir containing source file: http://stackoverflow.com/a/7783326
 
@@ -28,6 +28,7 @@ def add_first_valid_dir_to_path(dirList):
     """ Add the first valid directory in 'dirList' to the system path """
     # In lieu of actually installing the library, just keep a list of all the places it could be in each environment
     validDir = first_valid_dir(dirList)
+    print __file__ , "is attempting to load a path ...",
     if validDir:
         if validDir in sys.path:
             print "Already in sys.path:", validDir
@@ -37,9 +38,10 @@ def add_first_valid_dir_to_path(dirList):
     else:
         raise ImportError("None of the specified directories were loaded") # Assume that not having this loaded is a bad thing
 # List all the places where the research environment could be
-add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/researchenv',
+add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/src/researchenv',
                                '/media/jwatson/FILEPILE/Python/ResearchEnv',
                                'F:\Python\ResearchEnv',
+                               'E:\Python\ResearchEnv',
                                '/media/mawglin/FILEPILE/Python/ResearchEnv' ] )
 
 # ~~ Libraries ~~
@@ -48,4 +50,6 @@ add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/researchenv',
 # ~ Local Libraries ~
 from ResearchEnv import * # Load the custom environment, this also loads UCBerkeleyUtil
 
-# == End Init ==========================================================================================================
+# == End Init ================================================================================================================== 140 char ==
+
+# if __name__ == "__main__":
