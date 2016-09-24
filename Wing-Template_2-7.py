@@ -13,5 +13,6 @@ A ONE LINE DESCRIPTION OF THE FILE
 
 # == Init Environment ==================================================================================================
 import sys, os.path
+from math import pi
 SOURCEDIR = os.path.dirname(os.path.abspath(__file__)) # URL, dir containing source file: http://stackoverflow.com/a/7783326
 # == End Init ==========================================================================================================
