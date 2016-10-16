@@ -16,3 +16,11 @@ import sys, os.path
 from math import pi
 SOURCEDIR = os.path.dirname(os.path.abspath(__file__)) # URL, dir containing source file: http://stackoverflow.com/a/7783326
 # == End Init ==============================================================================================================================
+
+# == Base Conversion ==
+
+def bin_2_dec( binStr ):
+    """ Convert a binary string to a decimal integer """
+    return int( binStr , 2 )
+
+# == End Bases ==
