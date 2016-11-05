@@ -28,9 +28,10 @@ def nearest_2_fraction( decimal , greatestDenom ):
     if decimal % 1 != 0:
         whole = int( floor( decimal ) ) # Get the whole part
         decimal = decimal % 1 # get the decimal part
-        denom = 2 ; btm = 0 ; top =1 ; delta = 
-        while denom <= greatestDenom:
-            pass # FIXME: START HERE!
+        incr = 1/greatestDenom ; count = 0 ; closest = 0
+        while closest <= decimal:
+            closest += incr
+            count += 1
     else:
         return decimal
     
