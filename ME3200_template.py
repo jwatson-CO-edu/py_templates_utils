@@ -6,9 +6,9 @@
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
 
 """
-FILENAME.py , Built on Wing 101 for Python 2.7
-James Watson, YYYY MONTHNAME
-A ONE LINE DESCRIPTION OF THE FILE
+ME3200_template.py , Built on Wing 101 for Python 2.7
+James Watson, 2016 October
+Helpful functions for grading 3200 labs and HW
 """
 
 # == Init Environment ======================================================================================================================
