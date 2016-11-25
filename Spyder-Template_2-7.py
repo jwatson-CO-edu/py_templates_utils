@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Template Version: 2016-09-05
+# Template Version: 2016-11-25
 
 # ~~ Future First ~~
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
@@ -13,7 +13,8 @@ A ONE LINE DESCRIPTION OF THE FILE
 
 # == Init Environment ========================================================================================================== 140 char ==
 import sys, os.path
-SOURCEDIR = os.path.dirname(os.path.abspath(__file__)) # URL, dir containing source file: http://stackoverflow.com/a/7783326
+SOURCEDIR = os.path.dirname( os.path.abspath( __file__ ) ) # URL, dir containing source file: http://stackoverflow.com/a/7783326
+SOURCENAM = os.path.split( __file__ )[1]
 
 def first_valid_dir(dirList):
     """ Return the first valid directory in 'dirList', otherwise return False if no valid directories exist in the list """
@@ -38,7 +39,9 @@ def add_first_valid_dir_to_path(dirList):
     else:
         raise ImportError("None of the specified directories were loaded") # Assume that not having this loaded is a bad thing
 # List all the places where the research environment could be
-add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/src/researchenv',
+add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/ME-6225_Motion-Planning/Assembly_Planner/ResearchEnv',
+                               'E:\ME-6225_Motion-Planning\Assembly_Planner\ResearchEnv',
+                               '/home/jwatson/regrasp_planning/src/researchenv',
                                '/media/jwatson/FILEPILE/Python/ResearchEnv',
                                'F:\Python\ResearchEnv',
                                'E:\Python\ResearchEnv',
