@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Template Version: 2016-11-25
+# Template Version: 2016-12-08
 
 # ~~ Future First ~~
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
@@ -12,9 +12,7 @@ A ONE LINE DESCRIPTION OF THE FILE
 """
 
 # == Init Environment ========================================================================================================== 140 char ==
-import sys, os.path
-SOURCEDIR = os.path.dirname( os.path.abspath( __file__ ) ) # URL, dir containing source file: http://stackoverflow.com/a/7783326
-SOURCENAM = os.path.split( __file__ )[1]
+import sys, os.path # To make changes to the PATH
 
 def first_valid_dir(dirList):
     """ Return the first valid directory in 'dirList', otherwise return False if no valid directories exist in the list """
@@ -52,6 +50,14 @@ add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/ME-6225_Motion-Planning/
 # ~ Special Libraries ~
 # ~ Local Libraries ~
 from ResearchEnv import * # Load the custom environment, this also loads UCBerkeleyUtil
+
+# Source names must be set AFTER imports!
+SOURCEDIR = os.path.dirname( os.path.abspath( __file__ ) ) # URL, dir containing source file: http://stackoverflow.com/a/7783326
+SOURCENAM = os.path.split( __file__ )[1]
+
+def relative_path( pathFromHere ):
+    """ Return a path relative to the present file """
+    return os.path.join( SOURCEDIR , pathFromHere )
 
 # == End Init ================================================================================================================== 140 char ==
 
