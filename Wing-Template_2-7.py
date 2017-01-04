@@ -14,11 +14,10 @@ A ONE LINE DESCRIPTION OF THE FILE
 # == Init Environment ======================================================================================================================
 import sys, os.path
 SOURCEDIR = os.path.dirname(os.path.abspath(__file__)) # URL, dir containing source file: http://stackoverflow.com/a/7783326
-# == End Init ==============================================================================================================================
 
 # ~~~ Imports ~~~
 # ~~ Standard ~~
-from math import pi
+from math import pi , sqrt
 # ~~ Special ~~
 import numpy as np
 # ~~ Local ~~
@@ -28,3 +27,12 @@ EPSILON = 1e-7
 infty = 1e309 # URL: http://stackoverflow.com/questions/1628026/python-infinity-any-caveats#comment31860436_1628026
 endl = os.linesep
 DISPLAYPLACES = 5 # Display 5 decimal places by default
+
+# == End Init ==============================================================================================================================
+
+
+# == Main Application ======================================================================================================================
+if __name__ == "__main__":
+    pass
+
+# == End Main ==============================================================================================================================
