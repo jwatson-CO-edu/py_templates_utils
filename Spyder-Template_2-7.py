@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Template Version: 2016-12-08
+# Template Version: 2017-01-09
 
 # ~~ Future First ~~
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
@@ -55,10 +55,24 @@ from ResearchEnv import * # Load the custom environment, this also loads UCBerke
 SOURCEDIR = os.path.dirname( os.path.abspath( __file__ ) ) # URL, dir containing source file: http://stackoverflow.com/a/7783326
 SOURCENAM = os.path.split( __file__ )[1]
 
-def relative_path( pathFromHere ):
-    """ Return a path relative to the present file """
-    return os.path.join( SOURCEDIR , pathFromHere )
+def rel_to_abs_path( relativePath ):
+    """ Return an absolute path , given the 'relativePath' """
+    return os.path.join( SOURCEDIR , relativePath )
 
 # == End Init ================================================================================================================== 140 char ==
 
-# if __name__ == "__main__":
+
+if __name__ == "__main__":
+    pass
+
+
+
+
+
+# == Abandoned Code ==
+        
+"""
+
+"""
+
+# == End Abandoned ==

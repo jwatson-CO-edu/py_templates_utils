@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from __future__ import division
 
 # === Init Env ===
@@ -8,6 +11,7 @@ from math import sqrt , pi , degrees
 
 
 # == Application Specific ==================================================================================================================
+
 if __name__ == "__main__":
     pass
 
