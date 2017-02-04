@@ -4,11 +4,32 @@
 from __future__ import division
 
 # === Init Env ===
+import math
+from math import sqrt , pi , degrees , radians , e , exp , sqrt , factorial , log
+from math import log as ln
+from random import random , randrange
+import numpy as np
 
-from math import sqrt , pi , degrees
+# ~~ Constants , Shortcuts , Aliases ~~
+import __builtin__ # Add global vars across modules
+__builtin__.EPSILON = 1e-7 # Margin for equality
+__builtin__.infty = 1e309 # Python representation of infinity
+import os
+__builtin__.endl = os.linesep # OS-specific newline
 
 # === End Init ===
 
+# == Math Helpers ==
+
+def eq(op1, op2): # << resenv
+    """ Return true if op1 and op2 are close enough """ # i.e. to account for floating point rounding errors
+    return abs(op1 - op2) <= EPSILON
+    
+def log2( x ): # >> resenv , 2016-09-14
+    """ Return the log base 2 of 'x' """
+    return log( x , 2 )
+
+# == End Helpers ==
 
 # == Application Specific ==================================================================================================================
 
