@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Template Version: 2017-01-09
+# Template Version: 2017-04-16
 
 # ~~ Future First ~~
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
@@ -9,6 +9,8 @@ from __future__ import division # Future imports must be called before everythin
 FILENAME.py , Built on Spyder for Python 2.7
 James Watson, YYYY MONTHNAME
 A ONE LINE DESCRIPTION OF THE FILE
+
+Dependencies: numpy
 """
 
 # == Init Environment ========================================================================================================== 140 char ==
@@ -59,20 +61,31 @@ def rel_to_abs_path( relativePath ):
     """ Return an absolute path , given the 'relativePath' """
     return os.path.join( SOURCEDIR , relativePath )
 
+# ~~ Script Signature ~~
+__progname__ = "PROGRAM NAME"
+__version__  = "YYYY.MM.DD"
+def __prog_signature__(): return __progname__ + " , Version " + __version__ # Return a string representing program name and verions
+
 # == End Init ================================================================================================================== 140 char ==
 
 
+# == Main Application ======================================================================================================================
+
+# = Program Vars =
+
+
+
+# = End Vars =
+
 if __name__ == "__main__":
-    pass
+    termArgs = sys.argv[1:] # Terminal arguments , if they exist
+    
 
-
-
+# == End Main ==============================================================================================================================
 
 
 # == Spare Parts ==
-        
-"""
 
-"""
+
 
 # == End Spare ==

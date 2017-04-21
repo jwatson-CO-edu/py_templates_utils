@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Template Version: 2017-02-09
+# Template Version: 2017-04-16
 
 # ~~ Future First ~~
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
@@ -9,6 +9,8 @@ from __future__ import division # Future imports must be called before everythin
 FILENAME.py , Built on Wing 101 for Python 2.7
 James Watson, YYYY MONTHNAME
 A ONE LINE DESCRIPTION OF THE FILE
+
+Dependencies: numpy
 """
 
 # == Init Environment ======================================================================================================================
@@ -28,12 +30,25 @@ __builtin__.EPSILON = 1e-7
 __builtin__.infty = 1e309 # URL: http://stackoverflow.com/questions/1628026/python-infinity-any-caveats#comment31860436_1628026
 __builtin__.endl = os.linesep
 
+# ~~ Script Signature ~~
+__progname__ = "PROGRAM NAME"
+__version__  = "YYYY.MM.DD"
+def __prog_signature__(): return __progname__ + " , Version " + __version__ # Return a string representing program name and verions
+
 # == End Init ==============================================================================================================================
 
 
 # == Main Application ======================================================================================================================
+
+# = Program Vars =
+
+
+
+# = End Vars =
+
 if __name__ == "__main__":
-    pass
+    termArgs = sys.argv[1:] # Terminal arguments , if they exist
+    
 
 # == End Main ==============================================================================================================================
 
