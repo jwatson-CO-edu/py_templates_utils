@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Template Version: 2017-04-16
+# Template Version: 2017-06-18
 
 # ~~ Future First ~~
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
@@ -39,19 +39,13 @@ def add_first_valid_dir_to_path(dirList):
     else:
         raise ImportError("None of the specified directories were loaded") # Assume that not having this loaded is a bad thing
 # List all the places where the research environment could be
-add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/ME-6225_Motion-Planning/Assembly_Planner/ResearchEnv',
-                               'E:\ME-6225_Motion-Planning\Assembly_Planner\ResearchEnv',
-                               '/home/jwatson/regrasp_planning/src/researchenv',
-                               '/media/jwatson/FILEPILE/Python/ResearchEnv',
-                               'F:\Python\ResearchEnv',
-                               'E:\Python\ResearchEnv',
-                               '/media/mawglin/FILEPILE/Python/ResearchEnv' ] )
+add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/Python/marchhare' ] )
 
 # ~~ Libraries ~~
 # ~ Standard Libraries ~
 # ~ Special Libraries ~
 # ~ Local Libraries ~
-from ResearchEnv import * # Load the custom environment, this also loads UCBerkeleyUtil
+from marchhare import * # Load the custom environment, this also loads UCBerkeleyUtil
 
 # Source names must be set AFTER imports!
 SOURCEDIR = os.path.dirname( os.path.abspath( __file__ ) ) # URL, dir containing source file: http://stackoverflow.com/a/7783326

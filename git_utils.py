@@ -22,6 +22,15 @@ def ignore_EXT( extList , maxDepth ):
             rtnStr += "*/" * i + extTerm
     return rtnStr
 
+def ignore_pattern( patternList , maxDepth ):
+    """ Return string for ",gitignore" to ignore each of the extensions in 'extList' to 'maxDepth' , List extensions without periods """
+    rtnStr = ""
+    for pttrn in patternList:
+        term = "*" + pttrn + "*" + endl
+        for i in xrange( maxDepth + 1 ):
+            rtnStr += "*/" * i + term
+    return rtnStr
+
 def ROS_ws_ignore_template():
     print ignore_EXT( ['*~'] , 6 )[:-1]
     print "build/"

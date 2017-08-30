@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Template Version: 2017-04-16
 
 # ~~ Future First ~~
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
 
 """
-FILENAME.py , Built on Wing 101 for Python 2.7
-James Watson, YYYY MONTHNAME
+FILENAME.py , Built on Wing 101 IDE for Python 2.7
+James Watson, YYYY MONTHNAME , Template Version: 2017-08-30
 A ONE LINE DESCRIPTION OF THE FILE
 
 Dependencies: numpy
@@ -47,6 +46,7 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 # = End Vars =
 
 if __name__ == "__main__":
+    print __prog_signature__()
     termArgs = sys.argv[1:] # Terminal arguments , if they exist
     
 
