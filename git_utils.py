@@ -44,6 +44,14 @@ def MSVS_ignore_template():
     print ignore_EXT( ['idb'] , 6 )[:-1]
     print ignore_EXT( ['pdb'] , 6 )[:-1]
     print ignore_EXT( ['suo'] , 6 )[:-1]
+
+def LaTeX_ignore_template():
+    print ignore_EXT( ['*~'] , 6 )[:-1]
+    print ignore_EXT( ['aux'] , 6 )[:-1]
+    print ignore_EXT( ['log'] , 6 )[:-1]
+    print ignore_EXT( ['pdf'] , 6 )[:-1]
+    print ignore_EXT( ['gz'] , 6 )[:-1]
+    
     
 if __name__ == "__main__":
     
@@ -52,3 +60,6 @@ if __name__ == "__main__":
     
     print endl , "=== MS Visual Studio Ignores ==="
     MSVS_ignore_template()    
+    
+    print endl , "=== LaTex Publications ==="   
+    LaTeX_ignore_template()
