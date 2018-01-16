@@ -19,6 +19,7 @@ SOURCEDIR = os.path.dirname( os.path.abspath( __file__ ) ) # URL, dir containing
 # ~~~ Imports ~~~
 # ~~ Standard ~~
 from math import pi , sqrt
+import shutil
 # ~~ Special ~~
 import numpy as np
 # ~~ Local ~~

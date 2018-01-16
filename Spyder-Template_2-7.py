@@ -5,10 +5,11 @@
 # ~~ Future First ~~
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
 
-"""
-FILENAME.py , Built on Spyder for Python 2.7
+"""@package FILENAME.py
+@brief A_ONE_LINE_DESCRIPTION_OF_THE_FILE
+
 James Watson, YYYY MONTHNAME
-A ONE LINE DESCRIPTION OF THE FILE
+Built on Spyder for Python 2.7
 
 Dependencies: numpy
 """
