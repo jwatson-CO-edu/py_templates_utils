@@ -6,13 +6,18 @@ from __future__ import division # Future imports must be called before everythin
 
 """
 FILENAME.py , Built on Wing 101 IDE for Python 2.7
-James Watson, YYYY MONTHNAME , Template Version: 2018-01-08
+James Watson, YYYY MONTHNAME , Template Version: 2018-05-10
 A ONE LINE DESCRIPTION OF THE FILE
 
 Dependencies: numpy
 """
 __progname__ = "PROGRAM NAME"
 __version__  = "YYYY.MM.DD"
+"""  
+~~~ Developmnent Plan ~~~
+[ ] ITEM1
+[ ] ITEM2
+"""
 
 # === Init Environment =====================================================================================================================
 import sys, os.path
@@ -37,6 +42,12 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 
 
 # === Main Application =====================================================================================================================
+
+# = Program Functions =
+
+
+
+# _ End Func _
 
 # = Program Vars =
 
