@@ -11,11 +11,10 @@ from random import random , randrange
 import numpy as np
 
 # ~~ Constants , Shortcuts , Aliases ~~
-import __builtin__ # Add global vars across modules
-__builtin__.EPSILON = 1e-7 # Margin for equality
-__builtin__.infty = 1e309 # Python representation of infinity
+EPSILON = 1e-7 # Margin for equality
+infty = 1e309 # Python representation of infinity
 import os
-__builtin__.endl = os.linesep # OS-specific newline
+endl = os.linesep # OS-specific newline
 
 # === End Init ===
 
