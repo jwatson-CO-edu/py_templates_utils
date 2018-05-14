@@ -6,7 +6,7 @@ from __future__ import division # Future imports must be called before everythin
 
 """
 FILENAME.py , Built on Wing 101 IDE for Python 2.7
-James Watson, YYYY MONTHNAME , Template Version: 2018-05-10
+James Watson, YYYY MONTHNAME , Template Version: 2018-05-14
 A ONE LINE DESCRIPTION OF THE FILE
 
 Dependencies: numpy
@@ -20,8 +20,12 @@ __version__  = "YYYY.MM.DD"
 """
 
 # === Init Environment =====================================================================================================================
+# ~~~ Prepare Paths ~~~
 import sys, os.path
 SOURCEDIR = os.path.dirname( os.path.abspath( __file__ ) ) # URL, dir containing source file: http://stackoverflow.com/a/7783326
+PARENTDIR = os.path.dirname( SOURCEDIR )
+# ~~ Path Utilities ~~
+def prepend_dir_to_path( pathName ): sys.path.insert( 0 , pathName ) # Might need this to fetch a lib in a parent directory
 
 # ~~~ Imports ~~~
 # ~~ Standard ~~
