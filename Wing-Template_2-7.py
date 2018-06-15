@@ -4,15 +4,18 @@
 # ~~ Future First ~~
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
 
+__progname__ = "PROGRAM_NAME.py"
+__version__  = "YYYY.MM" 
 """
-FILENAME.py , Built on Wing 101 IDE for Python 2.7
-James Watson, YYYY MONTHNAME , Template Version: 2018-05-14
+James Watson , Template Version: 2018-05-14
+Built on Wing 101 IDE for Python 2.7
+
 A ONE LINE DESCRIPTION OF THE FILE
 
 Dependencies: numpy
 """
-__progname__ = "PROGRAM NAME"
-__version__  = "YYYY.MM.DD"
+
+
 """  
 ~~~ Developmnent Plan ~~~
 [ ] ITEM1
