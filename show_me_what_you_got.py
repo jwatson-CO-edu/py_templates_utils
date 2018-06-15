@@ -96,6 +96,7 @@ if __name__ == "__main__":
         try:
             print "Attemping to open" , path ,
             
+            # URL , Open files in the appropriate application: https://stackoverflow.com/a/435669
             if sys.platform.startswith( 'darwin' ):
                 subprocess.call( ('open' ,  path ) )
             elif os.name == 'nt':
