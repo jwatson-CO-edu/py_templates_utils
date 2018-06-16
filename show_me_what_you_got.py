@@ -93,6 +93,8 @@ if __name__ == "__main__":
     
     for path in presPaths:
         
+	rwin = raw_input( "Enter to open next ..." )
+		
         try:
             print "Attemping to open" , path ,
             
