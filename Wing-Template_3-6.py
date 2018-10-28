@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# ~~ Future First ~~
-from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
-
 __progname__ = "PROGRAM_NAME.py"
 __version__  = "YYYY.MM" 
-__desc__     = "A_ONE_LINE_DESCRIPTION_OF_THE_FILE"
 """
 James Watson , Template Version: 2018-05-14
 Built on Wing 101 IDE for Python 2.7
+
+A ONE LINE DESCRIPTION OF THE FILE
 
 Dependencies: numpy
 """
