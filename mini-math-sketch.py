@@ -20,11 +20,11 @@ endl = os.linesep # OS-specific newline
 
 # == Math Helpers ==
 
-def eq(op1, op2): # << resenv
+def eq( op1 , op2 ): 
     """ Return true if op1 and op2 are close enough """ # i.e. to account for floating point rounding errors
-    return abs(op1 - op2) <= EPSILON
+    return abs( op1 - op2 ) <= EPSILON
     
-def log2( x ): # >> resenv , 2016-09-14
+def log2( x ): 
     """ Return the log base 2 of 'x' """
     return log( x , 2 )
 
