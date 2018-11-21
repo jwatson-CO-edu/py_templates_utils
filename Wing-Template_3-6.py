@@ -1,11 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 __progname__ = "PROGRAM_NAME.py"
-__version__  = "YYYY.MM" 
+__version__  = "YYYY.MM"
+__desc__     = "A_ONE_LINE_DESCRIPTION_OF_THE_FILE"
 """
 James Watson , Template Version: 2018-05-14
-Built on Wing 101 IDE for Python 2.7
+Built on Wing 101 IDE for Python 3.6
 
 A ONE LINE DESCRIPTION OF THE FILE
 
