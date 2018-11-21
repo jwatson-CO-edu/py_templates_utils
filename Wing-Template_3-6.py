@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# ~~ Future First ~~
-from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
-
 __progname__ = "PROGRAM_NAME.py"
 __version__  = "YYYY.MM" 
 """
-James Watson , Template Version: 2018-05-30
-Built on Spyder for Python 2.7
+James Watson , Template Version: 2018-05-14
+Built on Wing 101 IDE for Python 2.7
 
 A ONE LINE DESCRIPTION OF THE FILE
 
@@ -29,7 +26,6 @@ SOURCEDIR = os.path.dirname( os.path.abspath( __file__ ) ) # URL, dir containing
 PARENTDIR = os.path.dirname( SOURCEDIR )
 # ~~ Path Utilities ~~
 def prepend_dir_to_path( pathName ): sys.path.insert( 0 , pathName ) # Might need this to fetch a lib in a parent directory
-def rel_to_abs_path( relativePath ): return os.path.join( SOURCEDIR , relativePath ) # Return an absolute path , given the 'relativePath'
 
 # ~~~ Imports ~~~
 # ~~ Standard ~~
@@ -51,25 +47,17 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 
 # === Main Application =====================================================================================================================
 
-# = Program Vars =
-
-
-
-# _ End Vars _
-
-
 # = Program Functions =
 
 
 
 # _ End Func _
 
-
-# = Program Classes =
-
+# = Program Vars =
 
 
-# _ End Classes _
+
+# _ End Vars _
 
 if __name__ == "__main__":
     print __prog_signature__()
