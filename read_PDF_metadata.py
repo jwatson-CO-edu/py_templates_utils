@@ -30,6 +30,7 @@ def prepend_dir_to_path( pathName ): sys.path.insert( 0 , pathName ) # Might nee
 # ~~ Standard ~~
 from math import pi , sqrt
 import os
+import shutil
 # ~~ Special ~~
 import numpy as np
 # ~~ Local ~~
@@ -51,12 +52,80 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 # = Program Vars =
 
 SEARCHDIR = "/media/jwatson/FILEPILE/ICRA_2018/"
+LITOUTDIR = "/media/jwatson/FILEPILE/Assembly_Automation/Literature/000_Priority/"
 ALLFILES  = [ os.path.join( SEARCHDIR , fName ) for fName in os.listdir( SEARCHDIR ) ]
 print( "Located" , len( ALLFILES ) , "files in the search dir!" )
+
+REPLACEDICT = {
+    "Automated" :     "Auto" ,
+    "Objects" :       "Obj" , 
+    "Object" :        "Obj" , 
+    "Planning" :      "Plan" ,
+    "Manipulation" :  "Manip" , 
+    "Environmental" : "Env" ,
+    "Performance" :   "Perf" ,
+    "Optimisation" :  "Opt" , 
+    "Optimal" :       "Opt" , 
+    "Learning" :      "Learn" , 
+    "Collision" :     "Collsn" , 
+    "Detection" :     "Detect" ,
+    "Assembly" :      "Asm" ,
+    "assembly" :      "asm" ,
+    "Generation" :    "Gen" ,
+    "Exploration" :   "Explor" ,
+    "System" :        "Sys" , 
+    "Collaborative" : "Collab" , 
+    "Prediction" :    "Predict" ,
+    "Disassembly" :   "Disasm" , 
+    "Efficient" :     "Effic" ,
+    "Control" :       "Ctrl" , 
+    "Heterogeneous" : "Hetero" ,
+    "Programming" :   "Program" ,
+    "Assisted" :      "Assist" ,
+    "Construction" :  "Constr" ,
+    "Uncertain" :     "Uncert" ,
+    "Design" :        "Dsgn" ,
+    "Parameter" :     "Param" ,
+    "Flexible" :      "Flex" ,
+    "Engineer" :      "Engnr" , 
+    "Iterative" :     "Iter" , 
+    "Motion" :        "Motn" ,
+    "Robotic" :       "Robot" , 
+    "Intelligent" :   "Intelgnt" , 
+    "Integrating" :   "Integ" ,
+    "Pressure" :      "Press" , 
+    "An " :           "" ,
+    "A " :            "" ,
+    "," :             "" ,
+    ":" :             "-" ,
+}
+
+TITLECHARLIM = 70
 
 # _ End Vars _
 
 # = Program Functions =
+
+# ~ Results Processing ~
+
+def shorten_title( titleStr ):
+    """ Perform all the usual abbreviations for paper titles , limit length to 'TITLECHARLIM' """
+    rtnStr = str( titleStr )
+    for key , val in REPLACEDICT.items():
+        #print( "Look at" , key )
+        if key in titleStr:
+            #print( "substring found!" )
+            rtnStr = rtnStr.replace( key , val )
+    if len( rtnStr ) > TITLECHARLIM:
+        return rtnStr[:TITLECHARLIM]
+    else:
+        return rtnStr
+
+def strip_parens( titleStr ):
+    """ Remove the parentheses that ICRA added """
+    return titleStr[1:-1]
+
+# ~ Search ~
 
 def search_field_for_terms( fieldFunc , *terms , existing = None ):
     """ Search all the titles for the 'terms' """
@@ -86,9 +155,10 @@ def search_field_for_terms( fieldFunc , *terms , existing = None ):
                         # Store the hit
                         results[ f.ID[0] ] = {
                             'path' :     fName , 
-                            'title' :    f.Info['/Title'] , 
-                            'authors' :  f.Info['/Author'] , 
-                            'keywords' : f.Info['/Keywords']
+                            'title' :    strip_parens( f.Info['/Title'] ) , 
+                            'authors' :  strip_parens( f.Info['/Author'] ) , 
+                            'keywords' : strip_parens( f.Info['/Keywords'] ) ,
+                            'year' :     int( f.Info['/CreationDate'][3:7] )
                         }
                         
                         # Increment counter
@@ -106,6 +176,28 @@ def fetch_keywords( f ):
     """ Fetch the title of the PDF object """
     return f.Info['/Keywords']
 
+# ~ File Processing ~
+
+def get_first_author( entryDict ):
+    """ Get the last name of the first author """
+    return entryDict['authors'].split(',')[0].split(' ')[-1]
+
+def informative_file_name( entryDict ):
+    """ Given a search hit from the above, generate a filename with important data , sans EXT """
+    return str( entryDict['year'] ) + " _ " + shorten_title( entryDict['title'] ) + " _ " + get_first_author( entryDict )
+    
+def rename_move_hits( results , outputDir ):
+    """ Move all the search hits to the desired directory where they will have meaningful names """
+    print( "Renaming files ...." )
+    count = 0
+    for ID , hit in results.items():
+        short = informative_file_name( hit )    
+        outPath = os.path.join( outputDir , short + ".pdf" )
+        shutil.copy( hit['path'] , outPath )
+        print( hit['path'] , "--cp->" , outPath )
+        count += 1
+    print( "Completed" , count , "copy operations!" )
+    
 # _ End Func _
 
 if __name__ == "__main__":
@@ -124,10 +216,21 @@ if __name__ == "__main__":
         print( x.Info['/Keywords'] )
         print()
     
-    # Perform a search and store results
-    results = search_field_for_terms( fetch_title    , "assembly" , "Assembly" )
-    results = search_field_for_terms( fetch_keywords , "assembly" , "Assembly" , existing =  results )
-    
+    # Search for terms
+    if 1:
+        # Perform a search and store results
+        results = search_field_for_terms( fetch_title    , "assembly" , "Assembly" )
+        results = search_field_for_terms( fetch_keywords , "assembly" , "Assembly" , existing =  results )
+        
+        for ID , hit in results.items():
+            short = shorten_title( hit['title'] )
+            print( short , len( hit['title'] ) , "-->" , len( short ) ) 
+            print( informative_file_name( hit ) )
+            print()
+            
+    # Copy hits to dir
+    if 1:
+        rename_move_hits( results , LITOUTDIR )
 
 # ___ End Main _____________________________________________________________________________________________________________________________
 
