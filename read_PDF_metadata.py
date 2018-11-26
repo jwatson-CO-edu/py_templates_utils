@@ -219,17 +219,18 @@ if __name__ == "__main__":
     # Search for terms
     if 1:
         # Perform a search and store results
-        results = search_field_for_terms( fetch_title    , "assembly" , "Assembly" )
-        results = search_field_for_terms( fetch_keywords , "assembly" , "Assembly" , existing =  results )
+        results = search_field_for_terms( fetch_title    , "construction" , "Construction" )
+        results = search_field_for_terms( fetch_keywords , "build" , "Build" , existing =  results )
         
-        for ID , hit in results.items():
-            short = shorten_title( hit['title'] )
-            print( short , len( hit['title'] ) , "-->" , len( short ) ) 
-            print( informative_file_name( hit ) )
-            print()
+        if 0:
+            for ID , hit in results.items():
+                short = shorten_title( hit['title'] )
+                print( short , len( hit['title'] ) , "-->" , len( short ) ) 
+                print( informative_file_name( hit ) )
+                print()
             
     # Copy hits to dir
-    if 1:
+    if 0:
         rename_move_hits( results , LITOUTDIR )
 
 # ___ End Main _____________________________________________________________________________________________________________________________
