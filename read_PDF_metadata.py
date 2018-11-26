@@ -8,7 +8,7 @@ __desc__     = "Read PDF titles in a directory"
 James Watson , Template Version: 2018-05-14
 Built on Wing 101 IDE for Python 3.6
 
-Dependencies: numpy
+Dependencies: numpy , pdfrw
 """
 
 
@@ -33,7 +33,7 @@ import os
 # ~~ Special ~~
 import numpy as np
 # ~~ Local ~~
-from pdfrw import PdfReader
+from pdfrw import PdfReader # https://github.com/pmaupin/pdfrw#usage-model
 
 # ~~ Constants , Shortcuts , Aliases ~~
 EPSILON = 1e-7
@@ -58,21 +58,53 @@ print( "Located" , len( ALLFILES ) , "files in the search dir!" )
 
 # = Program Functions =
 
-def search_titles_for_terms( *terms ):
+def search_field_for_terms( fieldFunc , *terms , existing = None ):
     """ Search all the titles for the 'terms' """
+    # NOTE: This function assumes that 'fieldFunc' takes a 'PdfReader' as an argument and returns a string
     # NOTE: Linear search
-    count = 0
+    count    = 0
+    if existing:
+        results = existing
+    else:
+        results  = {}
+    # for each of the full paths
     for fName in ALLFILES:
-        f = PdfReader( fName )
-        for term in terms:
-            if term in f.Info['/Title']:
-                print( f.Info['/Title'] )
-                print( f.Info['/Author'] )
-                print( f.Info['/Keywords'] )
-                print()
-                count += 1
+        f = PdfReader( fName ) # open the file for reading
+        # If we have not added this file to the dictionary already
+        if f.ID[0] not in results:
+            # for each search term , store metadata if the term matches
+            for term in terms:
+                try:
+                    if term in fieldFunc( f ):
+                        
+                        # Display the hit
+                        print( f.Info['/Title'] )
+                        print( f.Info['/Author'] )
+                        print( f.Info['/Keywords'] )
+                        print()
+                        
+                        # Store the hit
+                        results[ f.ID[0] ] = {
+                            'path' :     fName , 
+                            'title' :    f.Info['/Title'] , 
+                            'authors' :  f.Info['/Author'] , 
+                            'keywords' : f.Info['/Keywords']
+                        }
+                        
+                        # Increment counter
+                        count += 1
+                except:
+                    pass
     print( count , "files match the terms" )
+    return results
             
+def fetch_title( f ):
+    """ Fetch the title of the PDF object """
+    return f.Info['/Title']
+
+def fetch_keywords( f ):
+    """ Fetch the title of the PDF object """
+    return f.Info['/Keywords']
 
 # _ End Func _
 
@@ -80,17 +112,21 @@ if __name__ == "__main__":
     print( __prog_signature__() )
     termArgs = sys.argv[1:] # Terminal arguments , if they exist
     
-    # Open the PDF
-    x = PdfReader( "/media/jwatson/FILEPILE/ICRA_2018/0005.pdf" )
-    print( x.keys() )
-    print( x.Info )
-    print( x.Info['/Title'] )
-    print( x.Info['/Author'] )
-    print( x.Info['/Keywords'] )
-    print()
+    # Open example PDF
+    if 0:
+        x = PdfReader( "/media/jwatson/FILEPILE/ICRA_2018/0152.pdf" )
+        print( x.keys() )
+        print( x.Info )
+        print( x.ID )
+        print( x.ID[0] == x.ID[1] )
+        print( x.Info['/Title'] )
+        print( x.Info['/Author'] )
+        print( x.Info['/Keywords'] )
+        print()
     
-    search_titles_for_terms( "assembly" , "Assembly" )
-    
+    # Perform a search and store results
+    results = search_field_for_terms( fetch_title    , "assembly" , "Assembly" )
+    results = search_field_for_terms( fetch_keywords , "assembly" , "Assembly" , existing =  results )
     
 
 # ___ End Main _____________________________________________________________________________________________________________________________
