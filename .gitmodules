@@ -1,0 +1,3 @@
+[submodule "pdfrw"]
+	path = pdfrw
+	url = https://github.com/pmaupin/pdfrw.git
