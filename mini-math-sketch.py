@@ -5,7 +5,7 @@ from __future__ import division
 
 # === Init Env ===
 import math
-from math import sqrt , pi , degrees , radians , e , exp , sqrt , factorial , log
+from math import sqrt , pi , degrees , radians , e , exp , sqrt , factorial , log , sin , cos , tan
 from math import log as ln
 from random import random , randrange
 import numpy as np
