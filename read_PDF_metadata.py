@@ -51,8 +51,8 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 
 # = Program Vars =
 
-SEARCHDIR = "/media/jwatson/FILEPILE/ICRA_2018/"
-LITOUTDIR = "/media/jwatson/FILEPILE/Assembly_Automation/Literature/000_Priority/"
+SEARCHDIR = "/media/mawglin/FILEPILE/ICRA_2018/"
+LITOUTDIR = "/media/mawglin/FILEPILE/Assembly_Automation/Literature/000_Priority/"
 ALLFILES  = [ os.path.join( SEARCHDIR , fName ) for fName in os.listdir( SEARCHDIR ) ]
 print( "Located" , len( ALLFILES ) , "files in the search dir!" )
 
@@ -176,6 +176,15 @@ def fetch_keywords( f ):
     """ Fetch the title of the PDF object """
     return f.Info['/Keywords']
 
+def fetch_all_authors( f ):
+    """ Get a string composes of all the authors' last names """
+    authors = strip_parens( f.Info['/Author'] ).split(',')
+    lastNames = ""
+    for author in authors:
+        lastNames += author.split(' ')[-1] + " "
+    # print( lastNames )
+    return lastNames
+
 # ~ File Processing ~
 
 def get_first_author( entryDict ):
@@ -219,10 +228,13 @@ if __name__ == "__main__":
     # Search for terms
     if 1:
         # Perform a search and store results
-        results = search_field_for_terms( fetch_title    , "construction" , "Construction" )
-        results = search_field_for_terms( fetch_keywords , "build" , "Build" , existing =  results )
+        results = search_field_for_terms( fetch_all_authors , "Abbeel" )
+        results = search_field_for_terms( fetch_all_authors , "Levine"  , existing =  results )
+        results = search_field_for_terms( fetch_all_authors , "Minor"   , existing =  results )
+        results = search_field_for_terms( fetch_all_authors , "Leang"   , existing =  results )
+        results = search_field_for_terms( fetch_all_authors , "Hermans" , existing =  results )
         
-        if 0:
+        if 1:
             for ID , hit in results.items():
                 short = shorten_title( hit['title'] )
                 print( short , len( hit['title'] ) , "-->" , len( short ) ) 
@@ -230,7 +242,7 @@ if __name__ == "__main__":
                 print()
             
     # Copy hits to dir
-    if 0:
+    if 1:
         rename_move_hits( results , LITOUTDIR )
 
 # ___ End Main _____________________________________________________________________________________________________________________________
