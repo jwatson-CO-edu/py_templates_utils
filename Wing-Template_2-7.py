@@ -49,17 +49,29 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 
 # === Main Application =====================================================================================================================
 
-# = Program Functions =
+# ~~ Program Constants ~~
+
+
+# == Program Functions ==
 
 
 
-# _ End Func _
-
-# = Program Vars =
+# __ End Func __
 
 
+# == Program Classes ==
 
-# _ End Vars _
+
+
+# __ End Class __
+
+
+# == Program Vars ==
+
+
+
+# __ End Vars __
+
 
 if __name__ == "__main__":
     print __prog_signature__()
