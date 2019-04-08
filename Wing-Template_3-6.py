@@ -38,6 +38,7 @@ import numpy as np
 EPSILON = 1e-7
 infty   = 1e309 # URL: http://stackoverflow.com/questions/1628026/python-infinity-any-caveats#comment31860436_1628026
 endl    = os.linesep
+sqt2    = sqrt(2)
 
 # ~~ Script Signature ~~
 def __prog_signature__(): return __progname__ + " , Version " + __version__ # Return a string representing program name and verions

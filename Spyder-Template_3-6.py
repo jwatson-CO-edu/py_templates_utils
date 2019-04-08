@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# ~~ Future First ~~
-from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
-
 __progname__ = "PROGRAM_NAME.py"
 __version__  = "YYYY.MM" 
-__desc__     = "A_ONE_LINE_DESCRIPTION_OF_THE_FILE"
 """
-James Watson , Template Version: 2019-02-28
-Built on Wing 101 IDE for Python 2.7
+James Watson , Template Version: 2019-03-05
+Built on Spyder 3 IDE for Python 3.6
+
+A ONE LINE DESCRIPTION OF THE FILE
 
 Dependencies: numpy
 """
@@ -50,12 +48,6 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 
 # === Main Application =====================================================================================================================
 
-# = Program Classes =
-
-
-
-# _ End Class _
-
 # = Program Functions =
 
 
@@ -69,7 +61,7 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 # _ End Vars _
 
 if __name__ == "__main__":
-    print __prog_signature__()
+    print( __prog_signature__() )
     termArgs = sys.argv[1:] # Terminal arguments , if they exist
     
 
@@ -81,3 +73,4 @@ if __name__ == "__main__":
 
 
 # ___ End Spare ____________________________________________________________________________________________________________________________
+
