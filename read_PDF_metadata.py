@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 __progname__ = "read_PDF_metadata.py"
-__version__  = "2018.11"
+__version__  = "2019.05"
 __desc__     = "Read PDF titles in a directory"
 """
 James Watson , Template Version: 2018-05-14
@@ -13,9 +13,8 @@ Dependencies: numpy , pdfrw
 
 
 """  
-~~~ Developmnent Plan ~~~
-[ ] ITEM1
-[ ] ITEM2
+~~~ NOTES ~~~
+2019-05-29: Based on the file structure of ICRA 2018
 """
 
 # === Init Environment =====================================================================================================================
@@ -50,12 +49,15 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 # === Main Application =====================================================================================================================
 
 # = Program Vars =
-
-SEARCHDIR = "/media/mawglin/FILEPILE/ICRA_2018/"
-LITOUTDIR = "/media/mawglin/FILEPILE/Assembly_Automation/Literature/000_Priority/"
+# Set search directory for proceedings
+SEARCHDIR = "/media/USERNAME/DRIVENAME/PROCEEDINGS/"
+# Set output directory for renamed files
+LITOUTDIR = "/media/USERNAME/DRIVENAME/OUTPUTDIRECTORY/"
 ALLFILES  = [ os.path.join( SEARCHDIR , fName ) for fName in os.listdir( SEARCHDIR ) ]
 print( "Located" , len( ALLFILES ) , "files in the search dir!" )
 
+# This dictionary is used to abbreviate titles
+# ... "Big Jargon": "Abbrev" , ...
 REPLACEDICT = {
     "Automated" :     "Auto" ,
     "Objects" :       "Obj" , 
@@ -100,6 +102,7 @@ REPLACEDICT = {
     ":" :             "-" ,
 }
 
+# Set a limit on title length in chars, excluding year and first author
 TITLECHARLIM = 70
 
 # _ End Vars _
@@ -213,22 +216,12 @@ if __name__ == "__main__":
     print( __prog_signature__() )
     termArgs = sys.argv[1:] # Terminal arguments , if they exist
     
-    # Open example PDF
-    if 0:
-        x = PdfReader( "/media/jwatson/FILEPILE/ICRA_2018/0152.pdf" )
-        print( x.keys() )
-        print( x.Info )
-        print( x.ID )
-        print( x.ID[0] == x.ID[1] )
-        print( x.Info['/Title'] )
-        print( x.Info['/Author'] )
-        print( x.Info['/Keywords'] )
-        print()
-    
     # Search for terms
     if 1:
         # Perform a search and store results
+        # dict  = search_field_for_terms( <FETCH_FUNCTION>  , "TERM"  )  
         results = search_field_for_terms( fetch_all_authors , "Abbeel" )
+        # Chain together many searched by passing the existing results dict to the search function
         results = search_field_for_terms( fetch_all_authors , "Levine"  , existing =  results )
         results = search_field_for_terms( fetch_all_authors , "Minor"   , existing =  results )
         results = search_field_for_terms( fetch_all_authors , "Leang"   , existing =  results )
