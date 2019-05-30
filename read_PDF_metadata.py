@@ -255,13 +255,13 @@ if __name__ == "__main__":
         results = search_field_for_terms( fetch_all_authors , "Levine"  )
         results = search_field_for_terms( fetch_all_authors , "Hermans" , existing =  results )
         results = search_field_for_terms( fetch_all_authors , "Sundaralingam" , existing =  results )
-        results = search_field_for_terms( fetch_all_authors , "Radhen" )
-        results = search_field_for_terms( fetch_title       , "Assembly" )
-        results = search_field_for_terms( fetch_title       , "Grasping" )
-        results = search_field_for_terms( fetch_title       , "Fail" )
-        results = search_field_for_terms( fetch_title       , "Manufacturing" )
-        results = search_field_for_terms( fetch_keywords    , "Tactile" )
-        results = search_field_for_terms( fetch_keywords    , "Vision" )
+        results = search_field_for_terms( fetch_all_authors , "Radhen" , existing =  results )
+        results = search_field_for_terms( fetch_title       , "Assembly" , existing =  results )
+        results = search_field_for_terms( fetch_title       , "Grasping" , existing =  results )
+        results = search_field_for_terms( fetch_title       , "Fail" , existing =  results )
+        results = search_field_for_terms( fetch_title       , "Manufacturing" , existing =  results )
+        results = search_field_for_terms( fetch_keywords    , "Tactile" , existing =  results )
+        results = search_field_for_terms( fetch_keywords    , "Vision" , existing =  results )
         
         
         if 1:
