@@ -50,11 +50,14 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 
 # = Program Vars =
 # Set search directory for proceedings
-SEARCHDIR = "/media/USERNAME/DRIVENAME/PROCEEDINGS/"
+SEARCHDIR = "/media/jwatson/IEEE RAS/media/files/"
 # Set output directory for renamed files
-LITOUTDIR = "/media/USERNAME/DRIVENAME/OUTPUTDIRECTORY/"
+LITOUTDIR = "/home/jwatson/ICRA2019_Patel/"
 ALLFILES  = [ os.path.join( SEARCHDIR , fName ) for fName in os.listdir( SEARCHDIR ) ]
 print( "Located" , len( ALLFILES ) , "files in the search dir!" )
+
+# Turn debug printing on and off
+_SHOWDEBUG = 0
 
 # This dictionary is used to abbreviate titles
 # ... "Big Jargon": "Abbrev" , ...
@@ -128,6 +131,10 @@ def strip_parens( titleStr ):
     """ Remove the parentheses that ICRA added """
     return titleStr[1:-1]
 
+def get_EXT( fName ):
+    """ Return the capitalized file extension at the end of a path without the period """
+    return os.path.splitext( fName )[-1][1:].upper()
+
 # ~ Search ~
 
 def search_field_for_terms( fieldFunc , *terms , existing = None ):
@@ -141,33 +148,41 @@ def search_field_for_terms( fieldFunc , *terms , existing = None ):
         results  = {}
     # for each of the full paths
     for fName in ALLFILES:
-        f = PdfReader( fName ) # open the file for reading
-        # If we have not added this file to the dictionary already
-        if f.ID[0] not in results:
-            # for each search term , store metadata if the term matches
-            for term in terms:
-                try:
-                    if term in fieldFunc( f ):
-                        
-                        # Display the hit
-                        print( f.Info['/Title'] )
-                        print( f.Info['/Author'] )
-                        print( f.Info['/Keywords'] )
-                        print()
-                        
-                        # Store the hit
-                        results[ f.ID[0] ] = {
-                            'path' :     fName , 
-                            'title' :    strip_parens( f.Info['/Title'] ) , 
-                            'authors' :  strip_parens( f.Info['/Author'] ) , 
-                            'keywords' : strip_parens( f.Info['/Keywords'] ) ,
-                            'year' :     int( f.Info['/CreationDate'][3:7] )
-                        }
-                        
-                        # Increment counter
-                        count += 1
-                except:
-                    pass
+        if _SHOWDEBUG: print( "DEBUG: , Processing" , fName , "is a" , get_EXT( fName ) , type( get_EXT( fName ) ) , "file" )
+        if 'PDF' == get_EXT( fName ):
+            if _SHOWDEBUG: print( "\tDEBUG: FOUND PDF! ..." )
+            try:
+                f = PdfReader( fName ) # open the file for reading
+                # If we have not added this file to the dictionary already
+                if f.ID[0] not in results:
+                    # for each search term , store metadata if the term matches
+                    for term in terms:
+                        try:
+                            if term.upper() in fieldFunc( f ):
+                                
+                                # Display the hit
+                                print( f.Info['/Title'] )
+                                print( f.Info['/Author'] )
+                                print( f.Info['/Keywords'] )
+                                print()
+                                
+                                # Store the hit
+                                results[ f.ID[0] ] = {
+                                    'path' :     fName , 
+                                    'title' :    strip_parens( f.Info['/Title'] ) , 
+                                    'authors' :  strip_parens( f.Info['/Author'] ) , 
+                                    'keywords' : strip_parens( f.Info['/Keywords'] ) ,
+                                    'year' :     int( f.Info['/CreationDate'][3:7] )
+                                }
+                                
+                                # Increment counter
+                                count += 1
+                        except:
+                            print( "ERROR: Could not find tags for" , fName )
+            except:
+                print( "ERROR: Could not extract metadata from" , fName )
+        else:
+            if _SHOWDEBUG: print( "\tDEBUG: NOT PDF! ..." )
     print( count , "files match the terms" )
     return results
             
@@ -177,14 +192,14 @@ def fetch_title( f ):
 
 def fetch_keywords( f ):
     """ Fetch the title of the PDF object """
-    return f.Info['/Keywords']
+    return f.Info['/Keywords'].upper()
 
 def fetch_all_authors( f ):
     """ Get a string composes of all the authors' last names """
     authors = strip_parens( f.Info['/Author'] ).split(',')
     lastNames = ""
     for author in authors:
-        lastNames += author.split(' ')[-1] + " "
+        lastNames += ( author.split(' ')[-1] + " " ).upper()
     # print( lastNames )
     return lastNames
 
@@ -192,7 +207,7 @@ def fetch_all_authors( f ):
 
 def get_first_author( entryDict ):
     """ Get the last name of the first author """
-    return entryDict['authors'].split(',')[0].split(' ')[-1]
+    return entryDict['authors'].split(',')[0].split(' ')[-1].upper()
 
 def informative_file_name( entryDict ):
     """ Given a search hit from the above, generate a filename with important data , sans EXT """
@@ -209,6 +224,11 @@ def rename_move_hits( results , outputDir ):
         print( hit['path'] , "--cp->" , outPath )
         count += 1
     print( "Completed" , count , "copy operations!" )
+
+def ensure_dir( dirName ):
+    """ Create the directory if it does not exist """
+    if not os.path.exists( dirName ):
+        os.makedirs( dirName )
     
 # _ End Func _
 
@@ -216,16 +236,33 @@ if __name__ == "__main__":
     print( __prog_signature__() )
     termArgs = sys.argv[1:] # Terminal arguments , if they exist
     
+    if 0:
+        x = PdfReader( "/media/jwatson/IEEE RAS/media/files/0007.pdf" )
+        print( x.keys() )
+        print( x.Info )
+        print( x.ID )
+        print( x.ID[0] == x.ID[1] )
+        print( x.Info['/Title'] )
+        print( x.Info['/Author'] )
+        print( x.Info['/Keywords'] )
+        print()
     # Search for terms
-    if 1:
+    elif 1:
         # Perform a search and store results
         # dict  = search_field_for_terms( <FETCH_FUNCTION>  , "TERM"  )  
-        results = search_field_for_terms( fetch_all_authors , "Abbeel" )
+        # results = search_field_for_terms( fetch_title , "robot" )
         # Chain together many searched by passing the existing results dict to the search function
-        results = search_field_for_terms( fetch_all_authors , "Levine"  , existing =  results )
-        results = search_field_for_terms( fetch_all_authors , "Minor"   , existing =  results )
-        results = search_field_for_terms( fetch_all_authors , "Leang"   , existing =  results )
+        results = search_field_for_terms( fetch_all_authors , "Levine"  )
         results = search_field_for_terms( fetch_all_authors , "Hermans" , existing =  results )
+        results = search_field_for_terms( fetch_all_authors , "Sundaralingam" , existing =  results )
+        results = search_field_for_terms( fetch_all_authors , "Radhen" )
+        results = search_field_for_terms( fetch_title       , "Assembly" )
+        results = search_field_for_terms( fetch_title       , "Grasping" )
+        results = search_field_for_terms( fetch_title       , "Fail" )
+        results = search_field_for_terms( fetch_title       , "Manufacturing" )
+        results = search_field_for_terms( fetch_keywords    , "Tactile" )
+        results = search_field_for_terms( fetch_keywords    , "Vision" )
+        
         
         if 1:
             for ID , hit in results.items():
@@ -234,8 +271,11 @@ if __name__ == "__main__":
                 print( informative_file_name( hit ) )
                 print()
             
+
+
     # Copy hits to dir
     if 1:
+        ensure_dir( LITOUTDIR )
         rename_move_hits( results , LITOUTDIR )
 
 # ___ End Main _____________________________________________________________________________________________________________________________
