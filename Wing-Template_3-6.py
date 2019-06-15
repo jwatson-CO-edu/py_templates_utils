@@ -71,7 +71,7 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 
 
 if __name__ == "__main__":
-    print __prog_signature__()
+    print( __prog_signature__() )
     termArgs = sys.argv[1:] # Terminal arguments , if they exist
     
 
