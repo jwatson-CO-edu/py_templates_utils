@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 __progname__ = "read_PDF_metadata.py"
-__version__  = "2018.11"
+__version__  = "2019.05"
 __desc__     = "Read PDF titles in a directory"
 """
 James Watson , Template Version: 2018-05-14
@@ -13,9 +13,8 @@ Dependencies: numpy , pdfrw
 
 
 """  
-~~~ Developmnent Plan ~~~
-[ ] ITEM1
-[ ] ITEM2
+~~~ NOTES ~~~
+2019-05-29: Based on the file structure of ICRA 2018
 """
 
 # === Init Environment =====================================================================================================================
@@ -50,12 +49,20 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 # === Main Application =====================================================================================================================
 
 # = Program Vars =
-
-SEARCHDIR = "/media/mawglin/FILEPILE/ICRA_2018/"
-LITOUTDIR = "/media/mawglin/FILEPILE/Assembly_Automation/Literature/000_Priority/"
+# Set search directory for proceedings
+SEARCHDIR = "/home/jwatson/ICRA2019/media/files/"
+# Set output directory for renamed files
+LITOUTDIR = "/home/jwatson/ICRA2019/search_results/"
+# Fetch ALL filenames and report
 ALLFILES  = [ os.path.join( SEARCHDIR , fName ) for fName in os.listdir( SEARCHDIR ) ]
 print( "Located" , len( ALLFILES ) , "files in the search dir!" )
 
+# Turn debug printing on and off
+_SHOWDEBUG = 0
+_VERBOSE   = 1
+
+# This dictionary is used to abbreviate titles
+# ... "Big Jargon": "Abbrev" , ...
 REPLACEDICT = {
     "Automated" :     "Auto" ,
     "Objects" :       "Obj" , 
@@ -100,6 +107,7 @@ REPLACEDICT = {
     ":" :             "-" ,
 }
 
+# Set a limit on title length in chars, excluding year and first author
 TITLECHARLIM = 70
 
 # _ End Vars _
@@ -125,71 +133,109 @@ def strip_parens( titleStr ):
     """ Remove the parentheses that ICRA added """
     return titleStr[1:-1]
 
-# ~ Search ~
+def get_EXT( fName ):
+    """ Return the capitalized file extension at the end of a path without the period """
+    return os.path.splitext( fName )[-1][1:].upper()
 
-def search_field_for_terms( fieldFunc , *terms , existing = None ):
-    """ Search all the titles for the 'terms' """
-    # NOTE: This function assumes that 'fieldFunc' takes a 'PdfReader' as an argument and returns a string
-    # NOTE: Linear search
-    count    = 0
-    if existing:
-        results = existing
-    else:
-        results  = {}
-    # for each of the full paths
-    for fName in ALLFILES:
-        f = PdfReader( fName ) # open the file for reading
-        # If we have not added this file to the dictionary already
-        if f.ID[0] not in results:
-            # for each search term , store metadata if the term matches
-            for term in terms:
-                try:
-                    if term in fieldFunc( f ):
-                        
-                        # Display the hit
-                        print( f.Info['/Title'] )
-                        print( f.Info['/Author'] )
-                        print( f.Info['/Keywords'] )
-                        print()
-                        
-                        # Store the hit
-                        results[ f.ID[0] ] = {
-                            'path' :     fName , 
-                            'title' :    strip_parens( f.Info['/Title'] ) , 
-                            'authors' :  strip_parens( f.Info['/Author'] ) , 
-                            'keywords' : strip_parens( f.Info['/Keywords'] ) ,
-                            'year' :     int( f.Info['/CreationDate'][3:7] )
-                        }
-                        
-                        # Increment counter
-                        count += 1
-                except:
-                    pass
-    print( count , "files match the terms" )
-    return results
-            
+
+# ======= Search =======
+
+def get_first_author( entryDict ):
+    """ Get the last name of the first author """
+    return entryDict['authors'].split(',')[0].split(' ')[-1].upper()
+
+# === Field Functions ===
+
 def fetch_title( f ):
     """ Fetch the title of the PDF object """
     return f.Info['/Title']
 
 def fetch_keywords( f ):
     """ Fetch the title of the PDF object """
-    return f.Info['/Keywords']
+    if _SHOWDEBUG: print( type( f.Info['/Keywords'] ) )
+    return [ elem.upper() for elem in f.Info['/Keywords'] ]
 
 def fetch_all_authors( f ):
     """ Get a string composes of all the authors' last names """
     authors = strip_parens( f.Info['/Author'] ).split(',')
     lastNames = ""
     for author in authors:
-        lastNames += author.split(' ')[-1] + " "
+        lastNames += ( author.split(' ')[-1] + " " ).upper()
     # print( lastNames )
     return lastNames
 
-# ~ File Processing ~
+# ___ End Field ___
 
-def get_first_author( entryDict ):
-    """ Get the last name of the first author """
-    return entryDict['authors'].split(',')[0].split(' ')[-1]
+def search_field_for_terms( searches , existing = None ):
+    """ Search all the titles for the 'terms' 
+        NOTE: This function expects that 'searches' is a list of pair lists with item[0] as the Field Function and item[1] as a list of terms 
+        NOTE: item[1] must be a list, even for only one term"""
+    # NOTE: This function assumes that 'fieldFunc' takes a 'PdfReader' as an argument and returns a string
+    # NOTE: Linear search
+    count    = 0
+    i_loop   = 0
+    if existing:
+        results = existing
+    else:
+        results  = {}
+    # for each of the full paths
+    for fName in ALLFILES:
+        i_loop += 1
+        if _SHOWDEBUG: print( "DEBUG: , Processing" , fName , "is a" , get_EXT( fName ) , type( get_EXT( fName ) ) , "file" )
+        if 'PDF' == get_EXT( fName ):
+            if _SHOWDEBUG: print( "\tDEBUG: FOUND PDF! ..." )
+            try:
+                f = PdfReader( fName ) # open the file for reading
+                # If we have not added this file to the dictionary already
+                if f.ID[0] not in results:
+                    # for each search term , store metadata if the term matches
+                    for search in searches:
+                        if _SHOWDEBUG:  print( "search:" , search )
+                        fieldFunc = search[0]
+                        terms     = search[1]
+                        for term in terms:
+                            try:
+                                if _SHOWDEBUG:  print( "term:" , term )
+                                if term.upper() in fieldFunc( f ):
+                                    
+                                    # Increment counter
+                                    count += 1
+
+                                    # Display the hit
+                                    if _VERBOSE:
+                                        print()                             
+                                        print( "Hit" , count , ':' , f.Info['/Title'] )
+                                        print( f.Info['/Author'] )
+                                        print( f.Info['/Keywords'] )
+                                        print()
+
+                                    # Store the hit
+                                    results[ f.ID[0] ] = {
+                                        'path' :     fName , 
+                                        'title' :    strip_parens( f.Info['/Title'] ) , 
+                                        'authors' :  strip_parens( f.Info['/Author'] ) , 
+                                        'keywords' : strip_parens( f.Info['/Keywords'] ) ,
+                                        'year' :     int( f.Info['/CreationDate'][3:7] )
+                                    }
+
+                            except Exception as ex:
+                                print( "ERROR: Could not find tags for" , fName , '\t' , ex )
+                                exc_type, exc_obj, exc_tb = sys.exc_info()
+                                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                                print(exc_type, fname, exc_tb.tb_lineno)
+            except:
+                print( "ERROR: Could not extract metadata from" , fName )
+        else:
+            if _SHOWDEBUG: print( "\tDEBUG: NOT PDF! ..." )
+        if _VERBOSE:
+            if i_loop % 10 == 0:
+                print( '.' , end='' )
+    print( count , "files match the terms" )
+    return results
+
+# _______ End Search _______
+
+# ~ File Processing ~
 
 def informative_file_name( entryDict ):
     """ Given a search hit from the above, generate a filename with important data , sans EXT """
@@ -206,6 +252,11 @@ def rename_move_hits( results , outputDir ):
         print( hit['path'] , "--cp->" , outPath )
         count += 1
     print( "Completed" , count , "copy operations!" )
+
+def ensure_dir( dirName ):
+    """ Create the directory if it does not exist """
+    if not os.path.exists( dirName ):
+        os.makedirs( dirName )
     
 # _ End Func _
 
@@ -213,9 +264,8 @@ if __name__ == "__main__":
     print( __prog_signature__() )
     termArgs = sys.argv[1:] # Terminal arguments , if they exist
     
-    # Open example PDF
-    if 0:
-        x = PdfReader( "/media/jwatson/FILEPILE/ICRA_2018/0152.pdf" )
+    if _SHOWDEBUG:
+        x = PdfReader( "/media/jwatson/IEEE RAS/media/files/0007.pdf" )
         print( x.keys() )
         print( x.Info )
         print( x.ID )
@@ -224,26 +274,24 @@ if __name__ == "__main__":
         print( x.Info['/Author'] )
         print( x.Info['/Keywords'] )
         print()
+
+    # Perform a search and store results
+    results = search_field_for_terms( [
+        [ fetch_all_authors , [ "Levine" , "Hermans" , "Abbeel" , "Lozano-Pérez" , "Rus" ] ] ,
+        [ fetch_title       , [ "Assembl" , "Fail" , "Manufacturing" , "Reinforcement" ]  ] ,
+        [ fetch_keywords    , [ "Assembl" , "Fail" , "Manufacturing" , "Reinforcement" ]  ] ,
+    ] )
     
-    # Search for terms
-    if 1:
-        # Perform a search and store results
-        results = search_field_for_terms( fetch_all_authors , "Abbeel" )
-        results = search_field_for_terms( fetch_all_authors , "Levine"  , existing =  results )
-        results = search_field_for_terms( fetch_all_authors , "Minor"   , existing =  results )
-        results = search_field_for_terms( fetch_all_authors , "Leang"   , existing =  results )
-        results = search_field_for_terms( fetch_all_authors , "Hermans" , existing =  results )
-        
-        if 1:
-            for ID , hit in results.items():
-                short = shorten_title( hit['title'] )
-                print( short , len( hit['title'] ) , "-->" , len( short ) ) 
-                print( informative_file_name( hit ) )
-                print()
+    if _SHOWDEBUG:
+        for ID , hit in results.items():
+            short = shorten_title( hit['title'] )
+            print( short , len( hit['title'] ) , "-->" , len( short ) ) 
+            print( informative_file_name( hit ) )
+            print()
             
     # Copy hits to dir
-    if 1:
-        rename_move_hits( results , LITOUTDIR )
+    ensure_dir( LITOUTDIR ) # Create output dir if not exist
+    rename_move_hits( results , LITOUTDIR ) # Rename, move, and ENJOY
 
 # ___ End Main _____________________________________________________________________________________________________________________________
 
