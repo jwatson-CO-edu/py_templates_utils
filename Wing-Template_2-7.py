@@ -8,7 +8,7 @@ __progname__ = "PROGRAM_NAME.py"
 __version__  = "YYYY.MM" 
 __desc__     = "A_ONE_LINE_DESCRIPTION_OF_THE_FILE"
 """
-James Watson , Template Version: 2019-02-28
+James Watson , Template Version: 2019-05-12
 Built on Wing 101 IDE for Python 2.7
 
 Dependencies: numpy
@@ -48,32 +48,39 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 # ___ End Init _____________________________________________________________________________________________________________________________
 
 
-# === Main Application =====================================================================================================================
-
-# = Program Classes =
+# === Main Program =========================================================================================================================
 
 
-
-# _ End Class _
-
-# = Program Functions =
+# === Program Classes ===
 
 
 
-# _ End Func _
-
-# = Program Vars =
+# ___ End Class ___
 
 
+# === Program Functions ===
 
-# _ End Vars _
+
+
+# __ End Func __
+
+
+# === Program Vars ===
+
+
+
+# ___ End Vars ___
+
+
+# === Main Func ===
 
 if __name__ == "__main__":
     print __prog_signature__()
     termArgs = sys.argv[1:] # Terminal arguments , if they exist
     
+# ___ End Main ___
 
-# ___ End Main _____________________________________________________________________________________________________________________________
+# ___ End Program __________________________________________________________________________________________________________________________
 
 
 # === Spare Parts ==========================================================================================================================
