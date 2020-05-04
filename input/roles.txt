@@ -1,0 +1,20 @@
+Knight
+Monk
+Chef
+Clown
+Desperado
+Sorcerer
+Barbarian
+Pirate
+Skateboarder
+Monarch
+Scientist
+Detective
+Rockstar
+Racer
+Ninja
+Wrestler
+Superhero
+Astronaut
+Gangster
+Secret Agent
