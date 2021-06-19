@@ -1,11 +1,28 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# Template Version: 2017-04-13
+"""
+https://www.geeksforgeeks.org/how-to-create-a-countdown-timer-using-python/
+https://stackoverflow.com/a/16573339
+"""
 
-# ~~ Future First ~~
-from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
+import os, time
 
-# ~~ Imports ~~
-import datetime
+# define the countdown func.
+def countdown( t ):
 
-print datetime.now()
+    while t:
+        mins, secs = divmod(t, 60)
+        timer = '{:02d}:{:02d}'.format(mins, secs)
+        print( timer, end="\r" ) # https://stackoverflow.com/a/17391457
+        time.sleep(1)
+        t -= 1
+
+    print("Time's up!!")
+    duration =   2  # seconds
+    freq     = 550 #440  # Hz
+    os.system( 'play -nq -t alsa synth {} sine {}'.format(duration, freq) )
+
+
+# input time in seconds
+t = input("Enter the time in seconds: ")
+
+# function call
+countdown(int(t))
