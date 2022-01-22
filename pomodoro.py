@@ -24,7 +24,7 @@ tProgram = [
 ]
 
 ##### Settings #####
-duration =   1 # ----- Duration of tone [s]
+duration =   3 # ----- Duration of tone [s]
 freq     = 475 # ----- Tone sine frequency [Hz]
 
 
