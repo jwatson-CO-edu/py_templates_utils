@@ -92,22 +92,22 @@ def pomodoro( program ):
             stdscr.refresh()
             
             # 5. Wait
-            stdscr.timeout(1000)
+            stdscr.timeout( 1000 )
             
             # 6. Fetch user command
             key = stdscr.getch()
-            if key == ord('q'):
+            if key == ord( 'q' ): # Quit
                 break
-            if key == ord('n'):
+            if key == ord( 'n' ): # Next Interval
                 advance_interval()
-            elif key == ord(' '):
-                stdscr.addstr( 8, 5, ' '*30, curses.A_NORMAL )
+            elif key == ord(' '): # Pause
+                stdscr.addstr( 8, 5, ' '*30, curses.A_NORMAL ) # Blank out the last time print b/c pause has a longer message
                 running = not running
                 
         # Handle Ctrl-C #
         except KeyboardInterrupt:
             clean()
-            print( f"\nUser ended countdown with {t} seconds remaining!\n" )
+            print( f"\nUser ended countdown with {t} seconds of {s} remaining!\n" )
             exit()
 
     # Return terminal to normal #
