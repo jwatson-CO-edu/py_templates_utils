@@ -49,7 +49,7 @@ def pomodoro( program ):
     # Draw Static Portion #
     stdscr.border(0)
     stdscr.addstr(5, 5, 'Pomodoro Timer', curses.A_BOLD)
-    stdscr.addstr(6, 5, '[Space]: Pause, [n]: Next Interval, [q]: Quit', curses.A_NORMAL)
+    stdscr.addstr(6, 5, '[Space]: Pause, [n]: Next Interval, [r]: Restart Interval, [q]: Quit', curses.A_NORMAL)
     
     # Load first interval #
     i = 0
@@ -57,10 +57,11 @@ def pomodoro( program ):
     t = program[i][0]
     s = program[i][1]
     
-    def advance_interval():
+    def advance_interval( restart = 0 ):
         """ Move to the next interval in the program """
         nonlocal i, t, s
-        i = (i+1) % N
+        if not restart:
+            i = (i+1) % N
         t = program[i][0]
         s = program[i][1]
     
@@ -98,8 +99,10 @@ def pomodoro( program ):
             key = stdscr.getch()
             if key == ord( 'q' ): # Quit
                 break
-            if key == ord( 'n' ): # Next Interval
+            elif key == ord( 'n' ): # Next Interval
                 advance_interval()
+            elif key == ord( 'r' ): # Restart Interval
+                advance_interval( restart = 1 )
             elif key == ord(' '): # Pause
                 stdscr.addstr( 8, 5, ' '*30, curses.A_NORMAL ) # Blank out the last time print b/c pause has a longer message
                 running = not running
