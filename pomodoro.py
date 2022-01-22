@@ -1,6 +1,10 @@
 """
+## Resources ##
 https://www.geeksforgeeks.org/how-to-create-a-countdown-timer-using-python/
 https://stackoverflow.com/a/16573339
+
+## ~/.bashrc Command Alias ##
+alias pomo='python $HOME/py_templates_utils/pomodoro.py'
 """
 ########## INIT & SETTINGS #############################################################################################
 
