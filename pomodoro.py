@@ -14,7 +14,16 @@ import os, time, curses
 
 
 ##### Schedule #####
-tProgram = [
+tEasy = [
+    ( 50 * 60, "Work"  ),
+    ( 10 * 60, "Break" ),
+    ( 50 * 60, "Work"  ),
+    ( 10 * 60, "Break" ),
+    ( 40 * 60, "Work"  ),
+    ( 20 * 60, "Long Break" ),
+]
+
+tHustle = [
     ( 55 * 60, "Work"  ),
     (  5 * 60, "Break" ),
     ( 55 * 60, "Work"  ),
@@ -126,5 +135,5 @@ def pomodoro( program ):
 ########## MAIN ########################################################################################################
 
 if __name__ == '__main__':
-    pomodoro( tProgram )
+    pomodoro( tEasy )
     
