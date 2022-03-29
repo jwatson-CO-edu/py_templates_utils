@@ -25,8 +25,25 @@ def countdown( t ):
     os.system( 'play -nq -t alsa synth {} sine {}'.format(duration, freq) )
 
 
-# input time in seconds
-t = input("Enter the time in seconds (expressions allowed): ")
+def get_sec( timeStr ):
+    """Get seconds from string with format "HH:MM:SS" """
+    # Adapted from work by Taskinoor Hasan, https://stackoverflow.com/a/6402859
+    parts  = timeStr.split(':').reverse()
+    rtnSec = 0
+    for i, prt in enumerate( parts ):
+        rtnSec += int( prt ) * 60**i    
+    return rtnSec
+  
+  
+def parse_expr_to_seconds( secExp ):
+    """ Parse either "HH:MM:SS" or a math expression as a number of seconds """
+    if ':' in secExp: # A. If colon(s) present, then Assume HH:MM:SS
+        return get_sec( secExp )
+    return int( eval( secExp ) ) # Else assume math expression
 
-# function call
-countdown(int(eval(t)))
+
+# input time in seconds
+t = input("Enter the time in seconds (HH:MM:SS or math allowed): ")
+
+# Compute seconds and begin countdown
+countdown( parse_expr_to_seconds( secExp ) )
