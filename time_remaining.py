@@ -1,4 +1,5 @@
 """
+NOTE: `sudo apt install sox`
 https://www.geeksforgeeks.org/how-to-create-a-countdown-timer-using-python/
 https://stackoverflow.com/a/16573339
 """
