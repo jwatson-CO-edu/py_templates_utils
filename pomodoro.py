@@ -19,11 +19,15 @@ tEasy = [
     ( 10 * 60, "Break" ),
     ( 50 * 60, "Work"  ),
     ( 10 * 60, "Break" ),
+    ( 50 * 60, "Work"  ),
+    ( 10 * 60, "Break" ),
     ( 40 * 60, "Work"  ),
     ( 20 * 60, "Long Break" ),
 ]
 
 tHustle = [
+    ( 55 * 60, "Work"  ),
+    (  5 * 60, "Break" ),
     ( 55 * 60, "Work"  ),
     (  5 * 60, "Break" ),
     ( 55 * 60, "Work"  ),

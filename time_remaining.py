@@ -12,7 +12,11 @@ def countdown( t ):
     while t >= 0:
         try:
             mins, secs = divmod(t, 60)
-            timer = '{:02d}:{:02d}'.format(mins, secs)
+            if mins > 59:
+                hour, mins = divmod(mins, 60)
+                timer = '{:02d}:{:02d}:{:02d}'.format(hour, mins, secs)
+            else:
+                timer = '   {:02d}:{:02d}'.format(mins, secs)
             print( timer, end="\r" ) # https://stackoverflow.com/a/17391457
             time.sleep(1)
             t -= 1
