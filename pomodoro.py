@@ -14,6 +14,11 @@ import os, time, curses
 
 
 ##### Schedule #####
+tFocus = [
+    ( 90 * 60, "Work"  ),
+    ( 10 * 60, "Break" ),
+]
+
 tEasy = [
     ( 50 * 60, "Work"  ),
     ( 10 * 60, "Break" ),
@@ -139,5 +144,6 @@ def pomodoro( program ):
 ########## MAIN ########################################################################################################
 
 if __name__ == '__main__':
-    pomodoro( tEasy )
+    # pomodoro( tEasy )
+    pomodoro( tFocus )
     
