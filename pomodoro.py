@@ -119,7 +119,7 @@ def pomodoro( program ):
                 t -= 1
             # 4. Else timer is paused, display remaining but do not decrement it
             else:
-                timer += f"PAUSED AT {mins:03}:{secs:02}"
+                timer += f"PAUSED AT {mins: 3}:{secs:02}"
                 
             # 5. Print
             stdscr.addstr( 8, 5, timer, curses.A_NORMAL )
