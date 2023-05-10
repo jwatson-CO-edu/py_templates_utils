@@ -13,18 +13,23 @@ alias pomo='python $HOME/py_templates_utils/pomodoro.py'
 import os, time, curses
 
 
-##### Schedule #####
+##### Schedules #####
 tFocus = [
     ( 90 * 60, "Work"  ),
     ( 10 * 60, "Break" ),
 ]
 
+tLongHaul = [
+    ( 120 * 60, "Work"  ),
+    (  10 * 60, "Break" ),
+]
+
 tEasy = [
-    ( 50 * 60, "Work"  ),
+    ( 60 * 60, "Work"  ),
     ( 10 * 60, "Break" ),
-    ( 50 * 60, "Work"  ),
+    ( 60 * 60, "Work"  ),
     ( 10 * 60, "Break" ),
-    ( 50 * 60, "Work"  ),
+    ( 60 * 60, "Work"  ),
     ( 10 * 60, "Break" ),
     ( 40 * 60, "Work"  ),
     ( 20 * 60, "Long Break" ),
@@ -39,6 +44,11 @@ tHustle = [
     (  5 * 60, "Break" ),
     ( 55 * 60, "Work"  ),
     ( 15 * 60, "Long Break" ),
+]
+
+tBeast = [
+    ( 60 * 60, "Work"  ),
+    (  5 * 60, "Break" ),
 ]
 
 ##### Settings #####
@@ -60,6 +70,7 @@ def pomodoro( program ):
     stdscr.nodelay(1) # ------- `getch()` and `getkey()` for the window become non-blocking
     curses.noecho() # --------- turn off auto echoing of keypress on to screen
     curses.cbreak() # --------- react to keys instantly, without requiring the Enter key to be pressed
+    tIncr = 10*60 # ----------- Increment of time to add/subtract with p/m
     
     def clean():
         """ Return terminal to normal """
@@ -71,7 +82,7 @@ def pomodoro( program ):
     # Draw Static Portion #
     stdscr.border(0)
     stdscr.addstr(5, 5, 'Pomodoro Timer', curses.A_BOLD)
-    stdscr.addstr(6, 5, '[Space]: Pause, [n]: Next Interval, [r]: Restart Interval, [q]: Quit', curses.A_NORMAL)
+    stdscr.addstr(6, 5, '[Space]: Pause, [n]: Next Interval, [r]: Restart Interval, [q]: Quit, [p]: Plus time, [m] Minus time', curses.A_NORMAL)
     
     # Load first interval #
     i = 0
@@ -104,11 +115,11 @@ def pomodoro( program ):
         
             # 3. If the timer is running, display time remaining and decrement it
             if running:
-                timer += f"{mins:02}:{secs:02}"
+                timer += f"{mins: 3}:{secs:02}"
                 t -= 1
             # 4. Else timer is paused, display remaining but do not decrement it
             else:
-                timer += f"PAUSED AT {mins:02}:{secs:02}"
+                timer += f"PAUSED AT {mins:03}:{secs:02}"
                 
             # 5. Print
             stdscr.addstr( 8, 5, timer, curses.A_NORMAL )
@@ -128,6 +139,10 @@ def pomodoro( program ):
             elif key == ord(' '): # Pause
                 stdscr.addstr( 8, 5, ' '*30, curses.A_NORMAL ) # Blank out the last time print b/c pause has a longer message
                 running = not running
+            elif key == ord('p'):  # Plus duration
+                t += tIncr
+            elif key == ord('m'):  # Plus duration
+                t -= tIncr
                 
         # Handle Ctrl-C #
         except KeyboardInterrupt:
@@ -144,6 +159,9 @@ def pomodoro( program ):
 ########## MAIN ########################################################################################################
 
 if __name__ == '__main__':
-    # pomodoro( tEasy )
-    pomodoro( tFocus )
+    # pomodoro( tEasy ) # 60/10 + Long Break 20
+    # pomodoro( tBeast ) # 60/5 repeating
+    pomodoro( tFocus ) # 90/10 repeating
+    # pomodoro( tLongHaul ) # 120/10 repeating
+    
     
