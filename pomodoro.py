@@ -19,6 +19,11 @@ tFocus = [
     ( 10 * 60, "Break" ),
 ]
 
+tRealBreak = [
+    ( 90 * 60, "Work"  ),
+    ( 15 * 60, "Break" ),
+]
+
 tLongHaul = [
     ( 120 * 60, "Work"  ),
     (  10 * 60, "Break" ),
@@ -161,7 +166,8 @@ def pomodoro( program ):
 if __name__ == '__main__':
     # pomodoro( tEasy ) # 60/10 + Long Break 20
     # pomodoro( tBeast ) # 60/5 repeating
-    pomodoro( tFocus ) # 90/10 repeating
+    # pomodoro( tFocus ) # 90/10 repeating
+    pomodoro( tRealBreak ) # 90/15 repeating
     # pomodoro( tLongHaul ) # 120/10 repeating
     
     
