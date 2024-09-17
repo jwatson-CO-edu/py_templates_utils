@@ -29,11 +29,6 @@ tLongHaul = [
     (  20 * 60, "Break" ),
 ]
 
-tWorkHardWalkHard = [
-    ( 120 * 60, "Work"  ),
-    (  20 * 60, "Break" ),
-]
-
 tEasy = [
     ( 60 * 60, "Work"  ),
     ( 10 * 60, "Break" ),
