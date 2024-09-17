@@ -26,7 +26,7 @@ tRealBreak = [
 
 tLongHaul = [
     ( 120 * 60, "Work"  ),
-    (  10 * 60, "Break" ),
+    (  20 * 60, "Break" ),
 ]
 
 tWorkHardWalkHard = [
@@ -173,7 +173,6 @@ if __name__ == '__main__':
     # pomodoro( tBeast ) # 60/5 repeating
     # pomodoro( tFocus ) # 90/10 repeating
     # pomodoro( tRealBreak ) # 90/15 repeating
-    pomodoro( tWorkHardWalkHard ) # 120/20 repeating
-    # pomodoro( tLongHaul ) # 120/10 repeating
+    pomodoro( tLongHaul ) # 120/20 repeating
     
     
