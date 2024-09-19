@@ -1,43 +1,57 @@
-# https://docs.python.org/3/howto/urllib2.html
+import os
+from ast import literal_eval
+
+import numpy as np
+
+# temprKey = "Temperature"
+# speedKey = "Wind Speed"
+# drctnKey = "Wind Direction"
+
+outPath = os.path.expanduser( "~/py_templates_utils/data/kiteWeather.txt" )
 
 
-import urllib.request, json
-from html.parser import HTMLParser
-from pprint import pprint
+if __name__ == "__main__":
+    with open( outPath, 'r' ) as f:
+        
+        lines = f.readlines()
 
-class MyHTMLParser( HTMLParser ):
-    def __init__(self):
-        super().__init__()
-        self.data = []
-        self.current_data = {}
-        self.current_tag = None
+        temp = literal_eval( lines[0] )
+        wSpd = literal_eval( lines[1] )
+        wDir = literal_eval( lines[2] )
 
-    def handle_starttag(self, tag, attrs):
-        self.current_tag = tag
+        tmpMn = np.mean( temp )
+        wSpMn = np.mean( wSpd )
+        wDrMn = np.mean( wDir )
+        wSpSt = np.std( wSpd )
+        wDrSt = np.std( wDir )
 
-    def handle_data(self, data):
-        if self.current_tag == 'td':
-            self.current_data[len(self.current_data)] = data
+        print( "Let's go fly a kite?" )
 
-    def handle_endtag(self, tag):
-        if tag == 'tr':
-            self.data.append(self.current_data)
-            self.current_data = {}
-        self.current_tag = None
+        print( f"Temperature: {tmpMn:.1f}F" )
 
-_TARGET_URL = "https://sundowner.colorado.edu/weather/atoc1/"
-trgtHTML    = None
-htmlPrsr    = MyHTMLParser()
+        print( f"Wind Speed:  {wSpMn:.1f} ± {wSpSt:.1f}", end = ', ' )
+        if wSpMn < 8.0:
+            print( "Weak", end = ', ' )
+        elif wSpMn < 10.0:
+            print( "Marginal", end = ', ' )
+        elif wSpMn < 17.0:
+            print( "Good", end = ', ' )
+        else:
+            print( "Excessive", end = ', ' )
+        if wSpMn >= 8.0:
+            if wSpSt < 2.0:
+                print( "Solid" )
+            elif wSpSt < 4.0:
+                print( "Variable" )
+            else:
+                print( "Unstable" )
+        else:
+            print( "☹" )
 
-with urllib.request.urlopen( _TARGET_URL ) as response:
-    trgtHTML = response.read().decode().replace('\n','')
-    htmlPrsr.feed( trgtHTML )
-    trgtDict = json.loads( json.dumps( htmlPrsr.data ) )
-    pprint( trgtDict )
-    # for k in trgtDict.keys():
-    #     print( k )
-    # trgtDict = htmlPrsr.
-    # trgtHTML = [elem.decode().strip().replace('\n','') for elem in response.readlines()]
-    # trgtHTML = [line for line in trgtHTML if len( line )]
-    # for line in trgtHTML:
-    #     print( line )
+        print( f"Direction:   {wDrMn:.1f} ± {wDrSt:.1f}", end = ', ' )
+        if wDrSt < 15.0:
+            print( "Steady" )
+        elif wDrSt < 30.0:
+            print( "Wandering" )
+        else:
+            print( "Chaotic" )
