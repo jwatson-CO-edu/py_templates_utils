@@ -3,14 +3,16 @@
 ########## INIT ####################################################################################
 
 import urllib.request, os
+from math import ceil
 from collections import deque
 from time import sleep
 
 
 
 _TRGT_URL = "https://sundowner.colorado.edu/weather/atoc1/"
-_MAX_LEN  = 10
 _PERIOD_M = 15
+_SURVEY_M = 60 * 2
+_MAX_LEN  = int( ceil( _SURVEY_M / _PERIOD_M ) )
 temprKey  = "Temperature"
 speedKey  = "Wind Speed"
 drctnKey  = "Wind Direction"
