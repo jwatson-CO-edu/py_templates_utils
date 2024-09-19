@@ -40,15 +40,15 @@ def fetch_ATOC_datapoint():
             if temprKey in line:
                 datum = val_from_line( line )
                 temp.append( datum )
-                print( datum )
+                # print( datum )
             elif speedKey in line:
                 datum = val_from_line( line )
                 wSpd.append( datum )
-                print( datum )
+                # print( datum )
             elif drctnKey in line:
                 datum = val_from_line( line )
                 wDir.append( datum )
-                print( datum )
+                # print( datum )
 
 
 
