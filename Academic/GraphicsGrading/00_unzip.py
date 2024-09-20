@@ -9,7 +9,7 @@ def get_ordered_students( listPath ):
         lines = f.readlines()
         for line in lines:
             if len( line ) > 2:
-                students.append( line.lower().split() )
+                students.append( line.replace('-','').lower().split() )
     students.sort( key = lambda x: x[1] )
     return students
 
