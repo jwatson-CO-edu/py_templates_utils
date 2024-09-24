@@ -26,7 +26,7 @@ tRealBreak = [
 
 tLongHaul = [
     ( 120 * 60, "Work"  ),
-    (  10 * 60, "Break" ),
+    (  20 * 60, "Break" ),
 ]
 
 tWorkHardWalkHard = [

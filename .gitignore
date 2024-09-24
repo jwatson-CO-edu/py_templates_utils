@@ -2,6 +2,7 @@
 *.py~
 .ipynb_checkpoints/
 output/
+data/
 
 # Pomodoro #
 # Ignore the user's personal config files
