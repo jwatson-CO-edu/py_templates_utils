@@ -3,6 +3,10 @@
 .ipynb_checkpoints/
 output/
 data/
+*.out
+*/*.out
+*.log
+*/*.log
 
 # Pomodoro #
 # Ignore the user's personal config files
