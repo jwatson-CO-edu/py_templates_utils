@@ -210,6 +210,7 @@ def scrape_repo_address( htPath ):
                 if ("github.com" in part) and (' ' not in part):
                     parts_i = part.split('?')
                     part_i  = parts_i[0]
+                    # FIXME: THE FOLLOWING WILL STOP WORKING WHEN STUDENTS SUBMIT A NON-MAIN BRANCH FOR HW3
                     return part_i.replace( "https://github.com/", "git@github.com:" ).replace( "/tree/main", "" )
     return None
 
@@ -218,6 +219,21 @@ def get_folder_from_github_addr( gitAddr ):
     """ What folder will git put the repo in? """
     parts = str( gitAddr ).split('/')
     return parts[-1].replace('.git','')
+
+
+def fetch_most_recent_branch( dirPrefix : str = "" ):
+    """ Extract the branch that was most recently created """
+    # FIXME, START HERE: TEST THE COMMAND FROM THE ROOT GRADING FOLDER
+    pass
+
+
+
+########## STATIC ANALYSIS #########################################################################
+
+def run_PMD_report( codeDir : str = "" ):
+    """ Run a PMD report for Java """
+    # FIXME: TEST PMD, THEN WRAP THE APPROPRIATE COMMAND IN A PROCESS
+    pass
 
 
 
@@ -275,14 +291,6 @@ if __name__ == "__main__":
                 res = gradle_test( dirPrefix = stdDir )
             print()
 
-            # print( f"About to build Gradle project ..." )
-            # res = gradle_build_clean( dirPrefix = stdDir )
-            # print()
-
-            # print( f"About to run Gradle project ..." )
-            # run_gradle_build( dirPrefix = stdDir, jarDir = "build/libs", runEXT = "JAR" )
-            # print()
-
             mainSrc = find_main( dirPrefix = stdDir )
             if (mainSrc is not None):
                 print( f"Main Function: {mainSrc}\n" )
@@ -308,18 +316,28 @@ if __name__ == "__main__":
             usrCmd = input( "Press [Enter] to evaluate the next student: " ).upper()
             print()
 
-            # Handle user input
+            ## Handle user input ##
+            # Quit #
             if 'Q' in usrCmd:
                 disp_text_header( f"END PROGRAM", 10, preNL = 2, postNL = 1 )
                 sys.exit(0)
+            # Back to Previous Student #
             elif 'P' in usrCmd:
                 i -= 1
                 print( "^^^ PREVIOUS STUDENT ^^^" )
                 reverse = True
                 continue
+            # Next Student List File #
             elif 'E' in usrCmd:
-                print( "!XXX! END LIST !XXX!" )
+                print( "!///! END LIST !///!" )
                 break
+            # GOTO Student in Current List #
+            elif 'S:' in usrCmd:
+                searchStr = usrCmd.split(':')[-1]
+                print( f"Search for {searchStr} ..." )
+                # FIXME: SET THE INDEX TO THE STUDENT WITH THE SHORTEST EDIT DISTANCE TO THE CAPITALIZED SEARCH TERM
+                # FIXME: ALLOW FIRST, LAST, OR BOTH
+                continue
             
             i += 1
 

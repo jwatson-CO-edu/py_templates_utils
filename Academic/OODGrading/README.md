@@ -9,4 +9,5 @@
 ## Static Analysis
 * [PMD - source code analyzer](https://github.com/pmd/pmd)
     - `[ ]` Build
-    - `[ ]` Test on student project
+    - `[ ]` Test CLI from student project
+    - `[ ]` Test CLI from root folder
