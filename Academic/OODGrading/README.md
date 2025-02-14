@@ -1,5 +1,6 @@
 # Dependencies
-## Python 3.11
+* Tested under Ubuntu 22.04
+* Python 3.11
 ## PMD, Static Analysis
 1. `cd /tmp/`
 1. `wget https://github.com/pmd/pmd/releases/download/pmd_releases%2F7.10.0/pmd-dist-7.10.0-bin.zip`
