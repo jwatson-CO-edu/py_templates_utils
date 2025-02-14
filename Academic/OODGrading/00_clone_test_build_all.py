@@ -7,6 +7,26 @@ from pprint import pprint
 
 ##### Constants #####
 _INTELLIJ_PATH = "/opt/idea/bin/idea"
+_PMD_PATH      = "/opt/pmd-bin-7.10.0/bin/pmd"
+
+
+
+########## HELPER CLASSES ##########################################################################
+
+class TColor:
+    """ Terminal Colors """
+    # Source: https://stackoverflow.com/a/287944
+    HEADER    = '\033[95m'
+    OKBLUE    = '\033[94m'
+    OKCYAN    = '\033[96m'
+    OKGREEN   = '\033[92m'
+    WARNING   = '\033[93m'
+    FAIL      = '\033[91m'
+    ENDC      = '\033[0m'
+    BOLD      = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
 
 ########## HELPER FUNCTIONS ########################################################################
 
@@ -50,7 +70,7 @@ def disp_text_header( titleStr, emphasis, preNL = 0, postNL = 0 ):
     """ Make the headers that you like so much """
     emphStr = '#'*int(emphasis)
     newLine = '\n'
-    print( f"{newLine*int(preNL) if preNL else ''}{emphStr} {titleStr} {emphStr}{newLine*int(postNL) if postNL else ''}" )
+    print( f"{newLine*int(preNL) if preNL else ''}{emphStr} {TColor.OKGREEN}{titleStr}{TColor.ENDC} {emphStr}{newLine*int(postNL) if postNL else ''}" )
 
 
 
@@ -80,7 +100,7 @@ def run_cmd( ruleStr : str, timeout_s : int = 0, suppressErr : bool = False ) ->
         # wait for the process to terminate
         out, err = process.communicate()
         if (process.returncode != 0) and (not suppressErr):
-            print( f"ERROR:\n{err.decode()}" )
+            print( f"{TColor.FAIL}ERROR:\n{err.decode()}{TColor.ENDC}" )
         return { 
             'cmd': ruleStr,
             'out': out.decode(),
@@ -103,9 +123,12 @@ def gradle_test( dirPrefix : str = "" ):
     logs  = f"{res['out']}"
     lines = logs.split('\n')
     for line in lines:
-        # print( line )
         if "TestEventLogger" in line:
-            print( line.split("[TestEventLogger]")[-1] )
+            event = line.split("[TestEventLogger]")[-1]
+            if "FAIL" in event:
+                print( f"{TColor.FAIL}{event}{TColor.ENDC}" )
+            else:
+                print( f"{event}" )
     return res
 
 
@@ -210,6 +233,7 @@ def scrape_repo_address( htPath ):
                 if ("github.com" in part) and (' ' not in part):
                     parts_i = part.split('?')
                     part_i  = parts_i[0]
+                    # FIXME: THE FOLLOWING WILL STOP WORKING WHEN STUDENTS SUBMIT A NON-MAIN BRANCH FOR HW3
                     return part_i.replace( "https://github.com/", "git@github.com:" ).replace( "/tree/main", "" )
     return None
 
@@ -220,13 +244,61 @@ def get_folder_from_github_addr( gitAddr ):
     return parts[-1].replace('.git','')
 
 
+def get_most_recent_branch( dirPrefix : str = "", reqStr = None ):
+    """ Extract the branch that was most recently created """
+    cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ ls-remote --heads --sort=-authordate origin"
+    out = run_cmd( cmd )['out']
+    rtn = ""
+    print( f"{out}" )
+    if reqStr is not None:
+        req = f"{reqStr}"
+        for line in out.split('\n'):
+            # print( line.split('\t') )
+            if req in line.split('\t')[-1]:
+                rtn = line.split('/')[-1] 
+    else:
+        top = out.split('\n')[0]
+        rtn = top.split('/')[-1] 
+    return rtn if len( rtn ) else None
+
+
+def checkout_branch( dirPrefix : str = "", branchName : str = "" ):
+    """ Check out the specified branch """
+    cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ stash save"
+    run_cmd( cmd )
+    cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ checkout -f origin/{branchName}" # "-f": Force
+    out = run_cmd( cmd )['out']
+    print( f"{out}" )
+    cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ status" # "-f": Force
+    out = run_cmd( cmd )['out']
+    print( f"{out}" )
+
+
+
+########## STATIC ANALYSIS #########################################################################
+
+def run_PMD_report( dirPrefix : str = "", codeDir : str = "", outDir : str = "", studentStr : str = "" ):
+    """ Run a PMD report for Java """
+    cmd = f"{_PMD_PATH} check -d ./{dirPrefix}/{codeDir} -R rulesets/java/quickstart.xml -f text"
+    out = run_cmd( cmd )['out']
+    with open( f"{outDir}/{studentStr}_Java-Static-Analysis.txt", 'w' ) as f:
+        f.write( out )
+    print( f"{TColor.BOLD}{out}{TColor.ENDC}" )
+    
+
 
 ########## MAIN ####################################################################################
 
 
 if __name__ == "__main__":
 
-    _LIST_PATHS  = ["ugrads.txt", "grads.txt",]
+    _LIST_PATHS = ["ugrads.txt", "grads.txt",]
+    _GET_RECENT = True
+    _REPORT_DIR = "output"
+    _SOURCE_DIR = "src/main/java/csci/ooad"
+    _BRANCH_STR = "3"
+
+    os.makedirs( _REPORT_DIR, exist_ok = True )
 
     htPaths = [path for path in os.listdir() if ".html" in path]
 
@@ -269,19 +341,17 @@ if __name__ == "__main__":
                 continue
             print()
 
+            ### Fetch branch ###
+            if _GET_RECENT:
+                print( f"About to check out recent branch ..." )
+                brName = get_most_recent_branch( dirPrefix = stdDir, reqStr = _BRANCH_STR )
+                checkout_branch( dirPrefix = stdDir, branchName = brName )
+
             ### Run Gradle Checks ###
             print( f"About to run Gradle tests ..." )
             for _ in range(2):
                 res = gradle_test( dirPrefix = stdDir )
             print()
-
-            # print( f"About to build Gradle project ..." )
-            # res = gradle_build_clean( dirPrefix = stdDir )
-            # print()
-
-            # print( f"About to run Gradle project ..." )
-            # run_gradle_build( dirPrefix = stdDir, jarDir = "build/libs", runEXT = "JAR" )
-            # print()
 
             mainSrc = find_main( dirPrefix = stdDir )
             if (mainSrc is not None):
@@ -299,27 +369,42 @@ if __name__ == "__main__":
             else:
                 print( f"There was NO MAIN FUNCTION found in {stdDir}!!\n" )
 
+            print( f"About to run code style checks ..." )
+            disp_text_header( f"Static Analsys for {stdNam}", 3, preNL = 1, postNL = 1 )
+            run_PMD_report( dirPrefix = stdDir, codeDir = _SOURCE_DIR, outDir = _REPORT_DIR, studentStr = stdStr )
+            disp_text_header( f"{stdNam} Static Analsys COMPLETE", 3, preNL = 0, postNL = 1 )
+
             print( f"About to inspect Java project ..." )
             inspect_project( dirPrefix = stdDir )
             print()
 
-            disp_text_header( f"{stdNam}, Eval completed!", 5, preNL = 0, postNL = 1 )
+            disp_text_header( f"{stdNam}, Eval completed!", 5, preNL = 1, postNL = 2 )
 
             usrCmd = input( "Press [Enter] to evaluate the next student: " ).upper()
             print()
 
-            # Handle user input
+            ## Handle user input ##
+            # Quit #
             if 'Q' in usrCmd:
                 disp_text_header( f"END PROGRAM", 10, preNL = 2, postNL = 1 )
                 sys.exit(0)
+            # Back to Previous Student #
             elif 'P' in usrCmd:
                 i -= 1
                 print( "^^^ PREVIOUS STUDENT ^^^" )
                 reverse = True
                 continue
+            # Next Student List File #
             elif 'E' in usrCmd:
-                print( "!XXX! END LIST !XXX!" )
+                print( "!///! END LIST !///!" )
                 break
+            # GOTO Student in Current List #
+            elif 'S:' in usrCmd:
+                searchStr = usrCmd.split(':')[-1].strip().lower()
+                print( f"Search for {searchStr} ..." )
+                # FIXME: SET THE INDEX TO THE STUDENT WITH THE SHORTEST EDIT DISTANCE TO THE CAPITALIZED SEARCH TERM
+                # FIXME: ALLOW FIRST, LAST, OR BOTH
+                continue
             
             i += 1
 
