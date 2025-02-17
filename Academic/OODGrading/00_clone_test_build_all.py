@@ -280,11 +280,15 @@ def checkout_branch( dirPrefix : str = "", branchName : str = "" ):
 
 def run_PMD_report( dirPrefix : str = "", codeDir : str = "", outDir : str = "", studentStr : str = "" ):
     """ Run a PMD report for Java """
-    cmd = f"{_PMD_PATH} check -d ./{dirPrefix}/{codeDir} -R ./{_PMD_JAVA_RULES} -f text"
-    out = run_cmd( cmd )['out']
+    cmd   = f"{_PMD_PATH} check -d ./{dirPrefix}/{codeDir} -R ./{_PMD_JAVA_RULES} -f text"
+    out   = run_cmd( cmd )['out']
+    lines =  out.split('\n')
+    txt   = ""
+    for line in lines:
+        txt += line.split('/')[-1] + "\n"
     with open( f"{outDir}/{studentStr}_Java-Static-Analysis.txt", 'w' ) as f:
-        f.write( out )
-    print( f"{TColor.BOLD}{out}{TColor.ENDC}" )
+        f.write( txt )
+    print( f"{TColor.BOLD}{txt}{TColor.ENDC}" )
     
 
 
