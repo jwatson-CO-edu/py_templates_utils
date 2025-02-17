@@ -6,8 +6,9 @@ import subprocess, os, sys
 from pprint import pprint
 
 ##### Constants #####
-_INTELLIJ_PATH = "/opt/idea/bin/idea"
-_PMD_PATH      = "/opt/pmd-bin-7.10.0/bin/pmd"
+_INTELLIJ_PATH  = "/opt/idea/bin/idea"
+_PMD_PATH       = "/opt/pmd-bin-7.10.0/bin/pmd"
+_PMD_JAVA_RULES = "OOD_Java-Rules.xml"
 
 
 
@@ -279,7 +280,7 @@ def checkout_branch( dirPrefix : str = "", branchName : str = "" ):
 
 def run_PMD_report( dirPrefix : str = "", codeDir : str = "", outDir : str = "", studentStr : str = "" ):
     """ Run a PMD report for Java """
-    cmd = f"{_PMD_PATH} check -d ./{dirPrefix}/{codeDir} -R rulesets/java/quickstart.xml -f text"
+    cmd = f"{_PMD_PATH} check -d ./{dirPrefix}/{codeDir} -R ./{_PMD_JAVA_RULES} -f text"
     out = run_cmd( cmd )['out']
     with open( f"{outDir}/{studentStr}_Java-Static-Analysis.txt", 'w' ) as f:
         f.write( out )
