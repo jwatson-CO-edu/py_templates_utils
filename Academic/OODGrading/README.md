@@ -32,7 +32,7 @@ on each line.
         * Searches for HTML file from Canvas containing the GitHub repo link, Clones repo
         * Clones repo and checks out the most recent branch containing the search string you specified
         * Runs and prints Gradle test results.  
-        (**WARNING**: Gradle sometimes fails to consistently print all results `stdout`, which is where Python captures it. You may wish to rerun tests from inside IntelliJ. (See below.))
+        (**WARNING**: Gradle sometimes fails to consistently print all results to `stdout`, which is where Python captures it. You may wish to rerun tests from inside IntelliJ. (See below.))
         * Searches for `main()`, **IGNORE!**
         * Runs code style checks via [PMD Static Analysis](https://pmd.github.io/pmd/index.html). A report named after the student will appear in a new "output" subdirectory.
         * Opens IntelliJ IDEA with a view on the student project. You can re-run tests, inspect code, and generate class diagrams from here.
