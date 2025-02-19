@@ -36,7 +36,7 @@ on each line.
         * Searches for `main()`, **IGNORE!**
         * Runs code style checks via [PMD Static Analysis](https://pmd.github.io/pmd/index.html). A report named after the student will appear in a new "output" subdirectory.
         * Opens IntelliJ IDEA with a view on the student project. You can re-run tests, inspect code, and generate class diagrams from here.
-        * **You must close the IntelliJ window to continue to finish the student evaluation!**
+        * **You must close the IntelliJ window to finish the student evaluation!**
         * At the end of each student evaluation, you are given a prompt:
             - Simply press [Enter] to continue to next student.
             - Type [p] then [Enter] to review the previous student again.
