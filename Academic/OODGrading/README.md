@@ -24,7 +24,7 @@ This is to assist course staff in grading many student Java assignments in one s
 1. Create a text file that consists of all the students you are responsible for with  
 **LASTNAME, FIRSTNAME**  
 on each line.
-1. Change [line 300](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L300) of the PY file to be a list of string filenames. This must be a list, even if it only one file name.
+1. Change [line 300](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L300) of the PY file to be a list of string filenames created in the previous step. This must be a list, even if it only one file name.
 1. Change [line 304](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L304) to be a search string that will retrieve the appropriate branch. *Please make sure it is broad enough to capture every possible branch name, since there are no naming requirements for branches.*
 1. At the root folder (terminal): `python3.11 00_clone_test_build_all.py`, The following will occur:
     - The script iterates over the text files in the specified order
