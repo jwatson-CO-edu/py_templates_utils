@@ -236,8 +236,9 @@ def scrape_repo_address( htPath ):
                 if ("github.com" in part) and (' ' not in part):
                     parts_i = part.split('?')
                     part_i  = parts_i[0]
-                    # FIXME: THE FOLLOWING WILL STOP WORKING WHEN STUDENTS SUBMIT A NON-MAIN BRANCH FOR HW3
-                    return part_i.replace( "https://github.com/", "git@github.com:" ).replace( "/tree/main", "" )
+                    rtnStr  = part_i.replace( "https://github.com/", "git@github.com:" ).split( "/tree" )[0]
+                    print( f"Found URL: {rtnStr}" )
+                    return rtnStr
     return None
 
 
