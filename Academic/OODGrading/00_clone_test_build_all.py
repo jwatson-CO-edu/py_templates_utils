@@ -4,6 +4,8 @@
 ### Standard ###
 import subprocess, os, sys
 from pprint import pprint
+from collections import deque
+
 
 ##### Constants #####
 _INTELLIJ_PATH  = "/opt/idea/bin/idea"
@@ -67,7 +69,7 @@ def multisplit( inptStr, splitLst ):
     return parts
 
 
-def disp_text_header( titleStr, emphasis, preNL = 0, postNL = 0 ):
+def disp_text_header( titleStr : str, emphasis : int, preNL : int = 0, postNL : int = 0 ):
     """ Make the headers that you like so much """
     emphStr = '#'*int(emphasis)
     newLine = '\n'
@@ -289,7 +291,68 @@ def run_PMD_report( dirPrefix : str = "", codeDir : str = "", outDir : str = "",
     with open( f"{outDir}/{studentStr}_Java-Static-Analysis.txt", 'w' ) as f:
         f.write( txt )
     print( f"{TColor.BOLD}{txt}{TColor.ENDC}" )
+
+
+
+########## STRING ANALYSIS #########################################################################
+
+def levenshtein_dist( s1 : str, s2 : str ) -> int:
+    """ Get the edit distance between two strings """
+    # Author: Salvador Dali, https://stackoverflow.com/a/32558749
+    if len(s1) > len(s2):
+        s1, s2 = s2, s1
+    distances = range(len(s1) + 1)
+    for i2, c2 in enumerate(s2):
+        distances_ = deque()
+        distances_.append( i2+1 )
+        for i1, c1 in enumerate(s1):
+            if c1 == c2:
+                distances_.append(distances[i1])
+            else:
+                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
+    return distances_.pop()
     
+
+
+########## UTILITIES && FEATURES ###################################################################
+
+def search_ranked_student_index_in_list( searchStr : str, studentLst : list[list[str]], Nrank : int = 5 ) -> list[tuple[str,int,int]]:
+    """ Return a list of indices that correspond to the search string, Ranked by Levenshtein edit distance """
+    rtnRank = list()
+    # 0. Remove initial and trailing space
+    searchStr = searchStr.strip()
+    # 1. Handle <Last,First> and <First Last> inputs
+    dbblSrch  = False
+    if ',' in searchStr:
+        dbblSrch = True
+        parts    = [prt.strip().lower() for prt in searchStr.split(',')]
+        lastSrch = parts[0]
+        frstSrch = parts[1]
+    elif ' ' in searchStr:
+        dbblSrch = True
+        parts    = [prt.strip().lower() for prt in searchStr.split(' ')]
+        lastSrch = parts[1]
+        frstSrch = parts[0]
+    # 2. Rank all students
+    for i, student in enumerate( studentLst ):
+        stdntNm  = get_student_name( student )
+        lastLowr = student[0].lower()
+        frstLowr = student[1].lower()
+        # A. Full Name Search, Ranked by total Levenshtein distance = first + last
+        if dbblSrch:
+            rtnRank.append( (stdntNm, i, levenshtein_dist( lastLowr, lastSrch )+levenshtein_dist( frstLowr, frstSrch ), ) )
+        # B. Single Name Search, Ranked by min Levenshtein distance across {first,last,}
+        else:
+            rtnRank.append( (stdntNm, i, min(levenshtein_dist( lastLowr, searchStr ),levenshtein_dist( frstLowr, searchStr )), ) )
+    rtnRank.sort( key = lambda x: x[-1] )
+    rtnRank = rtnRank[ 0 : Nrank ]
+    disp_text_header( f"{Nrank} Search Results", 1, 1, 0 )
+    for i, student in enumerate( rtnRank ):
+        print( f"\t{student[0]}, {student[-1]:02}, {i if (i>0) else '*'}" )
+    disp_text_header( f"End", 1, 0, 1 )
+    return rtnRank
+    
+
 
 
 ########## MAIN ####################################################################################
@@ -302,10 +365,13 @@ if __name__ == "__main__":
     _REPORT_DIR = "output"
     _SOURCE_DIR = "src/main/java/csci/ooad"
     _BRANCH_STR = "3"
+    _N_SEARCH_R = 5
 
     os.makedirs( _REPORT_DIR, exist_ok = True )
 
     htPaths = [path for path in os.listdir() if ".html" in path]
+
+    disp_text_header( f"Begin Evaluation of {_LIST_PATHS}", 15, preNL = 1, postNL = 2 )
 
     for _LIST_PATH in _LIST_PATHS:
         disp_text_header( f"About to process {_LIST_PATH}!!", 10, preNL = 1, postNL = 1 )
@@ -407,11 +473,19 @@ if __name__ == "__main__":
             elif 'S:' in usrCmd:
                 searchStr = usrCmd.split(':')[-1].strip().lower()
                 print( f"Search for {searchStr} ..." )
-                # FIXME: SET THE INDEX TO THE STUDENT WITH THE SHORTEST EDIT DISTANCE TO THE CAPITALIZED SEARCH TERM
-                # FIXME: ALLOW FIRST, LAST, OR BOTH
+                ranking = search_ranked_student_index_in_list( searchStr, students, Nrank = _N_SEARCH_R )
+                invalid = True
+                while invalid:
+                    srchCmd = input( "Press [Enter] to accept top hit or enter number of desired result: " ).upper()
+                    try: 
+                        rnkChoice = int( srchCmd )
+                        invalid   = False
+                    except Exception as e:
+                        print( f"{srchCmd} was not a choice, Try again, {e}" )
+                i = ranking[rnkChoice][1]
                 continue
             
             i += 1
 
         disp_text_header( f"COMPLETED {_LIST_PATH}!!", 10, preNL = 1, postNL = 2 )
-    
+    disp_text_header( f"Student Evaluation of {_LIST_PATHS} COMPLETED!!", 15, preNL = 1, postNL = 2 )
