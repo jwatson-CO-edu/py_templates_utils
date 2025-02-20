@@ -299,8 +299,15 @@ def run_PMD_report( dirPrefix : str = "", codeDir : str = "", outDir : str = "",
 def levenshtein_dist( s1 : str, s2 : str ) -> int:
     """ Get the edit distance between two strings """
     # Author: Salvador Dali, https://stackoverflow.com/a/32558749
+    # 1. Trivial cases: One string is empty
+    if not len(s1):
+        return len(s2)
+    if not len(s2):
+        return len(s1)
+    # 2. This algo assumes second string is at least as long as the first
     if len(s1) > len(s2):
         s1, s2 = s2, s1
+    # 3. Compute distance and return
     distances = range(len(s1) + 1)
     for i2, c2 in enumerate(s2):
         distances_ = deque()
