@@ -127,13 +127,11 @@ def gradle_test( dirPrefix : str = "" ):
     lines = logs.split('\n')
     for line in lines:
         if "TestEventLogger" in line:
-            event = line.split("[TestEventLogger]")[-1]
+            event = line.split("[TestEventLogger]")[-1].rstrip()
             if "FAIL" in event:
                 print( f"{TColor.FAIL}{event}{TColor.ENDC}" )
             elif len( event ) > 5:
                 print( f"{event}" )
-            # else:
-            #     print( f"{line}" )
     return res
 
 
@@ -238,7 +236,7 @@ def scrape_repo_address( htPath ):
                 if ("github.com" in part) and (' ' not in part):
                     parts_i = part.split('?')
                     part_i  = parts_i[0]
-                    rtnStr  = part_i.replace( "https://github.com/", "git@github.com:" ).split( "/tree" )[0]
+                    rtnStr  = part_i.replace( "https://github.com/", "git@github.com:" ).split( "/tree" )[0].split( "/pull" )[0]
                     print( f"Found URL: {rtnStr}" )
                     return rtnStr
     return None
@@ -261,7 +259,7 @@ def get_most_recent_branch( dirPrefix : str = "", reqStr = None ):
             if req in line.split('\t')[-1]:
                 rtn = line.split('/')[-1] 
                 break
-    else:
+    if (reqStr is None) or (not len( rtn )):
         top = out.split('\n')[0]
         rtn = top.split('/')[-1] 
     for line in out.split('\n'):
@@ -435,8 +433,11 @@ if __name__ == "__main__":
 
             ### Run Gradle Checks ###
             print( f"About to run Gradle tests ..." )
-            for _ in range(2):
-                res = gradle_test( dirPrefix = stdDir )
+            try:
+                for _ in range(2):
+                    res = gradle_test( dirPrefix = stdDir )
+            except KeyboardInterrupt:
+                print( "\nUser CANCELLED Gradle test!" )
             print()
 
             mainSrc = find_main( dirPrefix = stdDir )
@@ -470,22 +471,8 @@ if __name__ == "__main__":
             print()
 
             ## Handle user input ##
-            # Quit #
-            if 'Q' in usrCmd:
-                disp_text_header( f"END PROGRAM", 10, preNL = 2, postNL = 1 )
-                sys.exit(0)
-            # Back to Previous Student #
-            elif 'P' in usrCmd:
-                i -= 1
-                print( "^^^ PREVIOUS STUDENT ^^^" )
-                reverse = True
-                continue
-            # Next Student List File #
-            elif 'E' in usrCmd:
-                print( "!///! END LIST !///!" )
-                break
             # GOTO Student in Current List #
-            elif 'S:' in usrCmd:
+            if 'S:' in usrCmd:
                 searchStr = usrCmd.split(':')[-1].strip().lower()
                 print( f"Search for {searchStr} ..." )
                 ranking = search_ranked_student_index_in_list( searchStr, students, Nrank = _N_SEARCH_R )
@@ -508,6 +495,25 @@ if __name__ == "__main__":
                 if rnkChoice >= 0:
                     i = ranking[rnkChoice][1]
                 continue
+            # Quit #
+            elif 'Q' in usrCmd:
+                disp_text_header( f"END PROGRAM", 10, preNL = 2, postNL = 1 )
+                sys.exit(0)
+            # Repeat Student #
+            elif 'R' in usrCmd:
+                print( f"<<< REPEAT {stdNam} Evaluation! <<<" )
+                continue
+            # Back to Previous Student #
+            elif 'P' in usrCmd:
+                i -= 1
+                print( "^^^ PREVIOUS STUDENT ^^^" )
+                reverse = True
+                continue
+            # Next Student List File #
+            elif 'E' in usrCmd:
+                print( "!///! END LIST !///!" )
+                break
+            
             
             i += 1
 
