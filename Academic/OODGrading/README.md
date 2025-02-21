@@ -27,6 +27,11 @@ on each line.
 1. Change [line 300](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L300) of the PY file to be a list of string filenames created in the previous step. This must be a list, even if it only one file name.
 1. Change [line 304](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L304) to be a search string that will retrieve the appropriate branch. *Please make sure it is broad enough to capture every possible branch name, since there are no naming requirements for branches.*
 1. At the root folder (terminal): `python3.11 00_clone_test_build_all.py`
+
+## Optional
+* Change [IntelliJ IDEA install location (Line 9)](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L9) if it differs for your machine.
+* Change [PMD install location (Line 10)](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L10) if it differs for your machine.
+* You can change "[OOD_Java-Rules.xml](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/OOD_Java-Rules.xml)" to [silence nuisance alerts](https://pmd.github.io/pmd/pmd_userdocs_making_rulesets.html#bulk-adding-rules). This [reference](https://pmd.github.io/pmd/pmd_rules_java.html) contains a description of all the Java rules that are part of PMD.
    
 # Program Flow
 - The script iterates over the text files in the specified order
@@ -46,10 +51,7 @@ on each line.
         - Type [q] then [Enter] to quit the program immediately. (*NOTE*: Next run, execution will start from the beginning of the alphabet. There is no saved state.)
 
 
-## Optional
-* Change [IntelliJ IDEA install location (Line 9)](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L9) if it differs for your machine.
-* Change [PMD install location (Line 10)](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L10) if it differs for your machine.
-* You can change "[OOD_Java-Rules.xml](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/OOD_Java-Rules.xml)" to [silence nuisance alerts](https://pmd.github.io/pmd/pmd_userdocs_making_rulesets.html#bulk-adding-rules). This [reference](https://pmd.github.io/pmd/pmd_rules_java.html) contains a description of all the Java rules that are part of PMD.
+
 
 # `DEV_PLAN`
 * `[>]` Add student search
