@@ -123,15 +123,22 @@ def gradle_test( dirPrefix : str = "" ):
     res = run_cmd( cmd, suppressErr = True )
     if len( res['err'] ):
         print( f"ERROR:\n{res['err']}" )
-    logs  = f"{res['out']}"
-    lines = logs.split('\n')
+    logs   = f"{res['out']}"
+    lines  = logs.split('\n')
+    tstLog = ""
+    failed = False
     for line in lines:
         if "TestEventLogger" in line:
             event = line.split("[TestEventLogger]")[-1].rstrip()
+            if len( event ) > 5:
+                tstLog += f"{event}\n"
             if "FAIL" in event:
+                failed = True
                 print( f"{TColor.FAIL}{event}{TColor.ENDC}" )
             elif len( event ) > 5:
                 print( f"{event}" )
+    if failed:
+        res['fail'] = tstLog
     return res
 
 
@@ -315,7 +322,8 @@ def levenshtein_dist( s1 : str, s2 : str ) -> int:
     if len(s1) > len(s2):
         s1, s2 = s2, s1
     # 3. Compute distance and return
-    distances = range(len(s1) + 1)
+    distances  = range(len(s1) + 1)
+    distances_ = None
     for i2, c2 in enumerate(s2):
         distances_ = deque()
         distances_.append( i2+1 )
@@ -324,7 +332,8 @@ def levenshtein_dist( s1 : str, s2 : str ) -> int:
                 distances_.append(distances[i1])
             else:
                 distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
-    return distances_.pop()
+    # return distances_.pop()
+    return distances_.pop() + abs(len(s1)-len(s2)) # HACK
     
 
 
@@ -350,8 +359,12 @@ def search_ranked_student_index_in_list( searchStr : str, studentLst : list[list
     # 2. Rank all students
     for i, student in enumerate( studentLst ):
         stdntNm  = get_student_name( student )
+
         lastLowr = student[0].lower()
         frstLowr = student[1].lower()
+        # lastLowr = student[1].lower()
+        # frstLowr = student[0].lower()
+
         # A. Full Name Search, Ranked by total Levenshtein distance = first + last
         if dbblSrch:
             rtnRank.append( (stdntNm, i, levenshtein_dist( lastLowr, lastSrch )+levenshtein_dist( frstLowr, frstSrch ), ) )
@@ -359,7 +372,7 @@ def search_ranked_student_index_in_list( searchStr : str, studentLst : list[list
         else:
             rtnRank.append( (stdntNm, i, min(levenshtein_dist( lastLowr, searchStr ),levenshtein_dist( frstLowr, searchStr )), ) )
     rtnRank.sort( key = lambda x: x[-1] )
-    rtnRank = rtnRank[ 0 : Nrank ]
+    # rtnRank = rtnRank[ 0 : Nrank ]
     disp_text_header( f"{Nrank} Search Results", 1, 1, 0 )
     for i, student in enumerate( rtnRank ):
         print( f"\t{student[0]}, {student[-1]:02}, {i if (i>0) else '*'}" )
@@ -367,6 +380,71 @@ def search_ranked_student_index_in_list( searchStr : str, studentLst : list[list
     return rtnRank
 
 
+def run_menu( students ):
+    """ Handle user input, per iteration """
+
+    usrCmd = input( "Press [Enter] to evaluate the next student: " ).upper()
+    print()
+
+    rtnState = {
+        'loop'    : "",
+        'iDelta'  :  0 ,
+        'index'   : -1 ,
+        'reverse' : False,
+    }
+
+    ## Handle user input ##
+    # Normal List Progression #
+    if not len( usrCmd ):
+        rtnState['iDelta'] = 1
+    # GOTO Student in Current List #
+    elif 'S:' in usrCmd:
+        searchStr = usrCmd.split(':')[-1].strip().lower()
+        print( f"Search for {searchStr} ..." )
+        ranking = search_ranked_student_index_in_list( searchStr, students, Nrank = _N_SEARCH_R )
+        invalid = True
+        while invalid:
+            srchCmd = input( "Press [Enter] to accept top hit or enter number of desired result, Cancel with 'c': " ).upper()
+            if len( srchCmd ):
+                try: 
+                    rnkChoice = int( srchCmd )
+                    invalid   = False
+                except Exception as e:
+                    if srchCmd == 'Q':
+                        disp_text_header( f"END PROGRAM", 10, preNL = 2, postNL = 1 )
+                        sys.exit(0)
+                    elif srchCmd == 'C':
+                        rnkChoice = -1
+                        invalid   = False
+                    else:
+                        print( f"{srchCmd} was not a choice, Try again, {e}" )
+            else:
+                rnkChoice = 0
+                invalid   = False
+        if rnkChoice >= 0:
+            print( f"Return item {ranking[rnkChoice]} at index {ranking[rnkChoice][1]}" )
+            rtnState['index'] = ranking[rnkChoice][1]
+        rtnState['loop'] = "continue"
+    # Quit #
+    elif 'Q' in usrCmd:
+        disp_text_header( f"END PROGRAM", 10, preNL = 2, postNL = 1 )
+        sys.exit(0)
+    # Repeat Student #
+    elif 'R' in usrCmd:
+        print( f"<<< REPEAT {stdNam} Evaluation! <<<" )
+        rtnState['loop'] = "continue"
+    # Back to Previous Student #
+    elif 'P' in usrCmd:
+        rtnState['iDelta'] = -1
+        print( "^^^ PREVIOUS STUDENT ^^^" )
+        rtnState['reverse'] = True
+        rtnState['loop'   ] = "continue"
+    # Next Student List File #
+    elif 'E' in usrCmd:
+        print( "!///! END LIST !///!" )
+        rtnState['loop'] = "break"
+
+    return rtnState
 
 ########## MAIN ####################################################################################
 
@@ -392,7 +470,19 @@ if __name__ == "__main__":
         Nstdnt   = len( students )
         i        = 0
         reverse  = False
+
+        # Allow search/cancel/quit at the start of each list, Prev/Redo are **disabled** here!
+        stateChange = run_menu( students )
+        loopAction  = stateChange['loop']
+        if stateChange['index'] >= 0:
+            i = stateChange['index']
+        if loopAction == 'break':
+            i = Nstdnt
+            print( f">>> SKIPPED {_LIST_PATH} !! >>>" )
+        
+        # Begin normal list iteration
         while i < Nstdnt:
+            print( f"... Iteration {i} ..." )
             student = students[i]
 
             ### Fetch Submission ###
@@ -436,6 +526,9 @@ if __name__ == "__main__":
             try:
                 for _ in range(2):
                     res = gradle_test( dirPrefix = stdDir )
+                if 'fail' in res:
+                    with open( f"{_REPORT_DIR}/{stdStr}_Test-Results-FAILED.txt", 'w' ) as f:
+                        f.write( res['fail'] )
             except KeyboardInterrupt:
                 print( "\nUser CANCELLED Gradle test!" )
             print()
@@ -467,55 +560,17 @@ if __name__ == "__main__":
 
             disp_text_header( f"{stdNam}, Eval completed!", 5, preNL = 1, postNL = 2 )
 
-            usrCmd = input( "Press [Enter] to evaluate the next student: " ).upper()
-            print()
-
-            ## Handle user input ##
-            # GOTO Student in Current List #
-            if 'S:' in usrCmd:
-                searchStr = usrCmd.split(':')[-1].strip().lower()
-                print( f"Search for {searchStr} ..." )
-                ranking = search_ranked_student_index_in_list( searchStr, students, Nrank = _N_SEARCH_R )
-                invalid = True
-                while invalid:
-                    srchCmd = input( "Press [Enter] to accept top hit or enter number of desired result, Cancel with 'c': " ).upper()
-                    if len( srchCmd ):
-                        try: 
-                            rnkChoice = int( srchCmd )
-                            invalid   = False
-                        except Exception as e:
-                            if srchCmd == 'c':
-                                rnkChoice = -1
-                                invalid   = False
-                            else:
-                                print( f"{srchCmd} was not a choice, Try again, {e}" )
-                    else:
-                        rnkChoice = 0
-                        invalid   = False
-                if rnkChoice >= 0:
-                    i = ranking[rnkChoice][1]
-                continue
-            # Quit #
-            elif 'Q' in usrCmd:
-                disp_text_header( f"END PROGRAM", 10, preNL = 2, postNL = 1 )
-                sys.exit(0)
-            # Repeat Student #
-            elif 'R' in usrCmd:
-                print( f"<<< REPEAT {stdNam} Evaluation! <<<" )
-                continue
-            # Back to Previous Student #
-            elif 'P' in usrCmd:
-                i -= 1
-                print( "^^^ PREVIOUS STUDENT ^^^" )
-                reverse = True
-                continue
-            # Next Student List File #
-            elif 'E' in usrCmd:
-                print( "!///! END LIST !///!" )
+            stateChange = run_menu( students )
+            reverse     = stateChange['reverse']
+            loopAction  = stateChange['loop']
+            if stateChange['index'] >= 0:
+                i = stateChange['index']
+            if loopAction == 'break':
                 break
+            elif loopAction == 'continue':
+                continue
             
-            
-            i += 1
+            i += stateChange['iDelta']
 
         disp_text_header( f"COMPLETED {_LIST_PATH}!!", 10, preNL = 1, postNL = 2 )
     disp_text_header( f"Student Evaluation of {_LIST_PATHS} COMPLETED!!", 15, preNL = 1, postNL = 2 )
