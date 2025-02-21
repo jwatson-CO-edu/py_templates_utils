@@ -54,6 +54,7 @@ on each line.
 * `[>]` Add student search
   - `[>]` 2025-02-21, ISSUE: <Lastname, Firstname> search seems to FAIL, display full ranking for the list and DEBUG
 * `[ ]` Config JSON so that users do not need to modify code every assignment.
+* `[ ]` Automatically export failing test results to a file.
 * `{?}` Allow users to add/commit files to the repo? YAGNI?
 
 # Change Log
