@@ -50,12 +50,10 @@ on each line.
         - Type [e] then [Enter] to proceed directly to the next text file, if it exists.
         - Type [q] then [Enter] to quit the program immediately. (*NOTE*: Next run, execution will start from the beginning of the alphabet. There is no saved state.)
 
-
-
-
 # `DEV_PLAN`
-* `[>]` Add student search
+* `[Y]` Add student search, 2025-02-21: Needs TESTING!
 * `[ ]` Config JSON so that users do not need to modify code every assignment.
+* `{?}` Allow users to add/commit files to the repo?
 
 # Windows Contribution Guide
 * [Spawning subprocesses from the shell will be different.](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L80)
