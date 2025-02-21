@@ -130,8 +130,10 @@ def gradle_test( dirPrefix : str = "" ):
             event = line.split("[TestEventLogger]")[-1]
             if "FAIL" in event:
                 print( f"{TColor.FAIL}{event}{TColor.ENDC}" )
-            else:
+            elif len( event ) > 5:
                 print( f"{event}" )
+            # else:
+            #     print( f"{line}" )
     return res
 
 
@@ -253,16 +255,20 @@ def get_most_recent_branch( dirPrefix : str = "", reqStr = None ):
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ ls-remote --heads --sort=-authordate origin"
     out = run_cmd( cmd )['out']
     rtn = ""
-    print( f"{out}" )
     if reqStr is not None:
         req = f"{reqStr}"
         for line in out.split('\n'):
-            # print( line.split('\t') )
             if req in line.split('\t')[-1]:
                 rtn = line.split('/')[-1] 
+                break
     else:
         top = out.split('\n')[0]
         rtn = top.split('/')[-1] 
+    for line in out.split('\n'):
+        if len( rtn ) and rtn in line:
+            print( f"{TColor.BOLD}{line}{TColor.ENDC}" )
+        else:
+            print( f"{line}" )
     return rtn if len( rtn ) else None
 
 
@@ -288,7 +294,9 @@ def run_PMD_report( dirPrefix : str = "", codeDir : str = "", outDir : str = "",
     lines =  out.split('\n')
     txt   = ""
     for line in lines:
-        txt += line.split('/')[-1] + "\n"
+        tx_i = line.split('/')[-1] + "\n"
+        if len( tx_i ) > 5:
+            txt += tx_i
     with open( f"{outDir}/{studentStr}_Java-Static-Analysis.txt", 'w' ) as f:
         f.write( txt )
     print( f"{TColor.BOLD}{txt}{TColor.ENDC}" )
@@ -359,7 +367,6 @@ def search_ranked_student_index_in_list( searchStr : str, studentLst : list[list
         print( f"\t{student[0]}, {student[-1]:02}, {i if (i>0) else '*'}" )
     disp_text_header( f"End", 1, 0, 1 )
     return rtnRank
-    
 
 
 
@@ -368,7 +375,7 @@ def search_ranked_student_index_in_list( searchStr : str, studentLst : list[list
 
 if __name__ == "__main__":
 
-    _LIST_PATHS = ["ugrads.txt", "grads.txt",]
+    _LIST_PATHS = ["grads.txt",]
     _GET_RECENT = True
     _REPORT_DIR = "output"
     _SOURCE_DIR = "src/main/java/csci/ooad"
@@ -484,13 +491,22 @@ if __name__ == "__main__":
                 ranking = search_ranked_student_index_in_list( searchStr, students, Nrank = _N_SEARCH_R )
                 invalid = True
                 while invalid:
-                    srchCmd = input( "Press [Enter] to accept top hit or enter number of desired result: " ).upper()
-                    try: 
-                        rnkChoice = int( srchCmd )
+                    srchCmd = input( "Press [Enter] to accept top hit or enter number of desired result, Cancel with 'c': " ).upper()
+                    if len( srchCmd ):
+                        try: 
+                            rnkChoice = int( srchCmd )
+                            invalid   = False
+                        except Exception as e:
+                            if srchCmd == 'c':
+                                rnkChoice = -1
+                                invalid   = False
+                            else:
+                                print( f"{srchCmd} was not a choice, Try again, {e}" )
+                    else:
+                        rnkChoice = 0
                         invalid   = False
-                    except Exception as e:
-                        print( f"{srchCmd} was not a choice, Try again, {e}" )
-                i = ranking[rnkChoice][1]
+                if rnkChoice >= 0:
+                    i = ranking[rnkChoice][1]
                 continue
             
             i += 1
