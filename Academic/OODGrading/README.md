@@ -35,11 +35,18 @@ on each line.
 * You can change "[OOD_Java-Rules.xml](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/OOD_Java-Rules.xml)" to [silence nuisance alerts](https://pmd.github.io/pmd/pmd_userdocs_making_rulesets.html#bulk-adding-rules). This [reference](https://pmd.github.io/pmd/pmd_rules_java.html) contains a description of all the Java rules that are part of PMD.
    
 # Program Flow
-- The script iterates over the text files in the specified order
+- The script iterates over the text files in the specified order, Each list begins with a prompt:
+   * Type [e] then [Enter] to proceed directly to the next text file, if it exists.
+   * Type "s:" followed by a student name, then [Enter] to search for a student and jump to their repo. The following patterns are accepted:
+      - LASTNAME, FIRSTNAME
+      - FIRSTNAME LASTNAME
+      - EITHERNAME
+   * Type [q] then [Enter] to quit the program immediately. 
 - The script iterates over the students within each file in alphabetic order by last name, Per student:
     * Searches for HTML file from Canvas containing the GitHub repo link, Clones repo
     * Clones repo and checks out the most recent branch containing the search string you specified
-    * Runs and prints Gradle test results.  
+    * Runs and prints Gradle test results. When one or more tests fail, test output is written to a file named after the student will appear in a new "output" subdirectory.
+    (You may cancel the current test with [Ctrl]+[c] (`SIGTERM`))  
     (**WARNING**: Gradle sometimes fails to consistently print all results to `stdout`, which is where Python captures it. You may wish to rerun tests from inside IntelliJ. (See below.))
     * Searches for `main()`, **IGNORE!**
     * Runs code style checks via [PMD Static Analysis](https://pmd.github.io/pmd/index.html). A report named after the student will appear in a new "output" subdirectory.
@@ -47,8 +54,13 @@ on each line.
     * **You must close the IntelliJ window to finish the student evaluation!**
     * At the end of each student evaluation, you are given a prompt:
         - Simply press [Enter] to continue to next student.
-        - Type [p] then [Enter] to review the previous student again.
+        - Type [p] then [Enter] to review the previous student.
+        - Type [r] then [Enter] to review the current student again.
         - Type [e] then [Enter] to proceed directly to the next text file, if it exists.
+        - Type "s:" followed by a student name, then [Enter] to search for a student and jump to their repo. The following patterns are accepted:
+            * LASTNAME, FIRSTNAME
+            * FIRSTNAME LASTNAME
+            * EITHERNAME
         - Type [q] then [Enter] to quit the program immediately. (*NOTE*: Next run, execution will start from the beginning of the alphabet. There is no saved state.)
 
 # `DEV_PLAN`
