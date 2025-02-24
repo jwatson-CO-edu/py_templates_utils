@@ -36,6 +36,7 @@ on each line.
    
 # Program Flow
 - The script iterates over the text files in the specified order, Each list begins with a prompt:
+   * Simply press [Enter] to evaluate students in this file.
    * Type [e] then [Enter] to proceed directly to the next text file, if it exists.
    * Type "s:" followed by a student name, then [Enter] to search for a student and jump to their repo. The following patterns are accepted:
       - LASTNAME, FIRSTNAME
