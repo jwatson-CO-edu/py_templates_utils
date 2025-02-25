@@ -18,20 +18,23 @@ This is to assist course staff in grading many student Java assignments in one s
 1. Add to "~/.bashrc": `alias pmd="/opt/pmd-bin-7.10.0/bin/pmd"`
 
 # Grading Script Usage Instructions (per Assignment)
-1. Copy "[00_clone_test_build_all.py](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/00_clone_test_build_all.py)" and "[OOD_Java-Rules.xml](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/OOD_Java-Rules.xml)" to the root directory for this assignment.
+1. Copy "[00_clone_test_build_all.py](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/00_clone_test_build_all.py)", "[OOD_Java-Rules.xml](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/OOD_Java-Rules.xml)", and [HW_Config.json](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/HW_Config.json) to the root directory for this assignment.
 1. At the assignment page, click "**Download Submissions**".
 1. Unzip the submissions at the root folder.
 1. Create a text file that consists of all the students you are responsible for with  
 **LASTNAME, FIRSTNAME**  
 on each line.
-1. Change [line 300](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L300) of the PY file to be a list of string filenames created in the previous step. This must be a list, even if it only one file name.
-1. Change [line 304](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L304) to be a search string that will retrieve the appropriate branch. *Please make sure it is broad enough to capture every possible branch name, since there are no naming requirements for branches.*  
+1. Change the following in [HW_Config.json](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/HW_Config.json) under the heading "HWX":
+   - "_LIST_PATHS": A list of string filenames created in the previous step. This must be a list, even if it only one file name.
+   - "_SOURCE_DIR": Root directory of source files used by the Gradle project.
+   - "_BRANCH_STR": A search string that will retrieve the appropriate branch. *Please make sure it is broad enough to capture every possible branch name, since there are no naming requirements for branches.*  
 **NOTE**: When the branch search does not return any hits, the most recently-created branch will be checked out automatically!
 1. At the root folder (terminal): `python3.11 00_clone_test_build_all.py`
 
 ## Optional
-* Change [IntelliJ IDEA install location (Line 9)](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L9) if it differs for your machine.
-* Change [PMD install location (Line 10)](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L10) if it differs for your machine.
+* Change the following in [HW_Config.json](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/HW_Config.json) under the heading that matches your OS:
+   - "_INTELLIJ_PATH" : If it differs for your machine.
+   - "_PMD_PATH": If it differs for your machine.
 * You can change "[OOD_Java-Rules.xml](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/OOD_Java-Rules.xml)" to [silence nuisance alerts](https://pmd.github.io/pmd/pmd_userdocs_making_rulesets.html#bulk-adding-rules). This [reference](https://pmd.github.io/pmd/pmd_rules_java.html) contains a description of all the Java rules that are part of PMD.
    
 # Program Flow
