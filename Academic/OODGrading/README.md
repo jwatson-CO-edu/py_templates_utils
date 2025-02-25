@@ -18,7 +18,7 @@ This is to assist course staff in grading many student Java assignments in one s
 1. Add to "~/.bashrc": `alias pmd="/opt/pmd-bin-7.10.0/bin/pmd"`
 
 # Grading Script Usage Instructions (per Assignment)
-1. Copy "[00_clone_test_build_all.py](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/00_clone_test_build_all.py)", "[OOD_Java-Rules.xml](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/OOD_Java-Rules.xml)", and [HW_Config.json](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/HW_Config.json) to the root directory for this assignment.
+1. Copy "[00_clone_test_build_all.py](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/00_clone_test_build_all.py)", "[OOD_Java-Rules.xml](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/OOD_Java-Rules.xml)", and "[HW_Config.json](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/HW_Config.json)" to the root directory for this assignment.
 1. At the assignment page, click "**Download Submissions**".
 1. Unzip the submissions at the root folder.
 1. Create a text file that consists of all the students you are responsible for with  
