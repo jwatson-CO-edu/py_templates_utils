@@ -25,33 +25,59 @@ This is to assist course staff in grading many student Java assignments in one s
 **LASTNAME, FIRSTNAME**  
 on each line.
 1. Change [line 300](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L300) of the PY file to be a list of string filenames created in the previous step. This must be a list, even if it only one file name.
-1. Change [line 304](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L304) to be a search string that will retrieve the appropriate branch. *Please make sure it is broad enough to capture every possible branch name, since there are no naming requirements for branches.*
-1. At the root folder (terminal): `python3.11 00_clone_test_build_all.py`, The following will occur:
-    - The script iterates over the text files in the specified order
-    - The script iterates over the students within each file in alphabetic order by last name, Per student:
-        * Searches for HTML file from Canvas containing the GitHub repo link, Clones repo
-        * Clones repo and checks out the most recent branch containing the search string you specified
-        * Runs and prints Gradle test results.  
-        (**WARNING**: Gradle sometimes fails to consistently print all results to `stdout`, which is where Python captures it. You may wish to rerun tests from inside IntelliJ. (See below.))
-        * Searches for `main()`, **IGNORE!**
-        * Runs code style checks via [PMD Static Analysis](https://pmd.github.io/pmd/index.html). A report named after the student will appear in a new "output" subdirectory.
-        * Opens IntelliJ IDEA with a view on the student project. You can re-run tests, inspect code, and generate class diagrams from here.
-        * **You must close the IntelliJ window to finish the student evaluation!**
-        * At the end of each student evaluation, you are given a prompt:
-            - Simply press [Enter] to continue to next student.
-            - Type [p] then [Enter] to review the previous student again.
-            - Type [e] then [Enter] to proceed directly to the next text file, if it exists.
-            - Type [q] then [Enter] to quit the program immediately. (*NOTE*: Next run, execution will start from the beginning of the alphabet. There is no saved state.)
-
+1. Change [line 304](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L304) to be a search string that will retrieve the appropriate branch. *Please make sure it is broad enough to capture every possible branch name, since there are no naming requirements for branches.*  
+**NOTE**: When the branch search does not return any hits, the most recently-created branch will be checked out automatically!
+1. At the root folder (terminal): `python3.11 00_clone_test_build_all.py`
 
 ## Optional
 * Change [IntelliJ IDEA install location (Line 9)](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L9) if it differs for your machine.
 * Change [PMD install location (Line 10)](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L10) if it differs for your machine.
 * You can change "[OOD_Java-Rules.xml](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/OOD_Java-Rules.xml)" to [silence nuisance alerts](https://pmd.github.io/pmd/pmd_userdocs_making_rulesets.html#bulk-adding-rules). This [reference](https://pmd.github.io/pmd/pmd_rules_java.html) contains a description of all the Java rules that are part of PMD.
+   
+# Program Flow
+- The script iterates over the text files in the specified order, Each list begins with a prompt:
+   * Simply press [Enter] to evaluate students in this file.
+   * Type [e] then [Enter] to proceed directly to the next text file, if it exists.
+   * Type "s:" followed by a student name, then [Enter] to search for a student and jump to their repo. The following patterns are accepted:
+      - LASTNAME, FIRSTNAME
+      - FIRSTNAME LASTNAME
+      - EITHERNAME
+   * Type [q] then [Enter] to quit the program immediately. 
+- The script iterates over the students within each file in alphabetic order by last name, Per student:
+    * Searches for HTML file from Canvas containing the GitHub repo link, Clones repo
+    * Clones repo and checks out the most recent branch containing the search string you specified. (If no branches contain the search string, then the most recently-created branch will be checked out.)
+    * Runs and prints Gradle test results. When one or more tests fail, test output is written to a file named after the student will appear in a new "output" subdirectory.
+    (You may cancel the current test with [Ctrl]+[c] (`SIGTERM`))  
+    (**WARNING**: Gradle sometimes fails to consistently print all results to `stdout`, which is where Python captures it. You may wish to rerun tests from inside IntelliJ. (See below.))
+    * Searches for `main()`, **IGNORE!**
+    * Runs code style checks via [PMD Static Analysis](https://pmd.github.io/pmd/index.html). A report named after the student will appear in a new "output" subdirectory.
+    * Opens IntelliJ IDEA with a view on the student project. You can re-run tests, inspect code, and generate class diagrams from here.
+    * **You must close the IntelliJ window to finish the student evaluation!**
+    * At the end of each student evaluation, you are given a prompt:
+        - Simply press [Enter] to continue to next student.
+        - Type [p] then [Enter] to review the previous student.
+        - Type [r] then [Enter] to review the current student again.
+        - Type [e] then [Enter] to proceed directly to the next text file, if it exists.
+        - Type "s:" followed by a student name, then [Enter] to search for a student and jump to their repo. The following patterns are accepted:
+            * LASTNAME, FIRSTNAME
+            * FIRSTNAME LASTNAME
+            * EITHERNAME
+        - Type [q] then [Enter] to quit the program immediately. (*NOTE*: Next run, execution will start from the beginning of the alphabet. There is no saved state.)
 
 # `DEV_PLAN`
-* `[>]` Add student search
-* `[ ]` Config JSON so that users do not need to modify code every assignment.
+* `[Y]` Add student search, 2025-02-21: Added, TESTED!
+  - `[Y]` 2025-02-21, ISSUE: <Lastname, Firstname> search seems to FAIL, display full ranking for the list and DEBUG, 2025-02-21: Resolved, compared wrong names
+* `[>]` Config JSON so that users do not need to modify code every assignment.
+   - `{?}` IF someone generates a pull req. for Windows functionality, THEN add Windows fields to the JSON.
+* `[Y]` Automatically export failing test results to a file, 2025-02-21: Added, TESTED!
+* `{?}` Allow users to add/commit files to the repo? YAGNI?
+   - `[ ]` Create "Eval" dir
+   - `[ ]` Scrape for screenshots since beginning of per-student eval
+   - `{?}` Automatically send style report here?
+   - `{?}` Automatically send failed test report here?
+
+# Change Log
+* 2025-02-21: Fixed issue with multiple matching branches that causes the _earliest_ of matches to be checked out instead of the **latest**, Fixed problems with name search.
 
 # Windows Contribution Guide
 * [Spawning subprocesses from the shell will be different.](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L80)
