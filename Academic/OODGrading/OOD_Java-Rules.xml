@@ -32,6 +32,12 @@
     <rule ref="category/java/codestyle.xml">
         <exclude name="UselessParentheses"/>
         <exclude name="ShortClassName"/>
+        <exclude name="MethodArgumentCouldBeFinal"/>
+        <exclude name="LocalVariableCouldBeFinal"/>
+        <exclude name="UnnecessaryLocalBeforeReturn"/>
+        <exclude name="UnnecessaryImport"/>
+        <exclude name="OnlyOneReturn"/>
+        <exclude name="CommentDefaultAccessModifier"/>
     </rule>
 
 
@@ -45,7 +51,7 @@
     <!-- ///// Performance //////////////////////////////////////////// -->
 
     <rule ref="category/java/performance.xml">
-        <!-- ** Exclude nuisance alerts here ** -->
+        <exclude name="UseStringBufferForStringAppends"/>
     </rule>
 
 </ruleset>

@@ -2,15 +2,42 @@
 
 ##### Imports #####
 ### Standard ###
-import subprocess, os, sys
+import subprocess, os, sys, platform, json
 from pprint import pprint
 from collections import deque
+from pprint import pprint
 
 
 ##### Constants #####
-_INTELLIJ_PATH  = "/opt/idea/bin/idea"
-_PMD_PATH       = "/opt/pmd-bin-7.10.0/bin/pmd"
-_PMD_JAVA_RULES = "OOD_Java-Rules.xml"
+_CONFIG_PATH = 'HW_Config.json'
+
+# Get all OS information in one tuple
+platform_info = platform.uname()
+print(f"Platform Information:")
+pprint( platform_info )
+print
+_USER_SYSTEM = platform_info.system
+
+config = None
+with open(_CONFIG_PATH, 'r') as f:
+    config = json.load(f)
+
+try:
+    ### Platform ###
+    _INTELLIJ_PATH  = config[_USER_SYSTEM]["_INTELLIJ_PATH"]
+    _PMD_PATH       = config[_USER_SYSTEM]["_PMD_PATH"]
+    ### Settings ###
+    _PMD_JAVA_RULES = config["Settings"]["_PMD_JAVA_RULES"]
+    _GET_RECENT     = config["Settings"]["_GET_RECENT"]
+    _REPORT_DIR     = config["Settings"]["_REPORT_DIR"]
+    _N_SEARCH_R     = config["Settings"]["_N_SEARCH_R"]
+    ### Assignment ###
+    _LIST_PATHS = config["HWX"]["_LIST_PATHS"]
+    _SOURCE_DIR = config["HWX"]["_SOURCE_DIR"]
+    _BRANCH_STR = config["HWX"]["_BRANCH_STR"]
+except KeyError as err:
+    print( f"\n\033[91mFAILED to load config file!, {err}\033[0m\n" )
+
 
 
 
@@ -123,15 +150,22 @@ def gradle_test( dirPrefix : str = "" ):
     res = run_cmd( cmd, suppressErr = True )
     if len( res['err'] ):
         print( f"ERROR:\n{res['err']}" )
-    logs  = f"{res['out']}"
-    lines = logs.split('\n')
+    logs   = f"{res['out']}"
+    lines  = logs.split('\n')
+    tstLog = ""
+    failed = False
     for line in lines:
         if "TestEventLogger" in line:
-            event = line.split("[TestEventLogger]")[-1]
+            event = line.split("[TestEventLogger]")[-1].rstrip()
+            if len( event ) > 5:
+                tstLog += f"{event}\n"
             if "FAIL" in event:
+                failed = True
                 print( f"{TColor.FAIL}{event}{TColor.ENDC}" )
-            else:
+            elif len( event ) > 5:
                 print( f"{event}" )
+    if failed:
+        res['fail'] = tstLog
     return res
 
 
@@ -236,7 +270,7 @@ def scrape_repo_address( htPath ):
                 if ("github.com" in part) and (' ' not in part):
                     parts_i = part.split('?')
                     part_i  = parts_i[0]
-                    rtnStr  = part_i.replace( "https://github.com/", "git@github.com:" ).split( "/tree" )[0]
+                    rtnStr  = part_i.replace( "https://github.com/", "git@github.com:" ).split( "/tree" )[0].split( "/pull" )[0]
                     print( f"Found URL: {rtnStr}" )
                     return rtnStr
     return None
@@ -253,16 +287,20 @@ def get_most_recent_branch( dirPrefix : str = "", reqStr = None ):
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ ls-remote --heads --sort=-authordate origin"
     out = run_cmd( cmd )['out']
     rtn = ""
-    print( f"{out}" )
     if reqStr is not None:
         req = f"{reqStr}"
         for line in out.split('\n'):
-            # print( line.split('\t') )
             if req in line.split('\t')[-1]:
                 rtn = line.split('/')[-1] 
-    else:
+                break
+    if (reqStr is None) or (not len( rtn )):
         top = out.split('\n')[0]
         rtn = top.split('/')[-1] 
+    for line in out.split('\n'):
+        if len( rtn ) and rtn in line:
+            print( f"{TColor.BOLD}{line}{TColor.ENDC}" )
+        else:
+            print( f"{line}" )
     return rtn if len( rtn ) else None
 
 
@@ -288,7 +326,9 @@ def run_PMD_report( dirPrefix : str = "", codeDir : str = "", outDir : str = "",
     lines =  out.split('\n')
     txt   = ""
     for line in lines:
-        txt += line.split('/')[-1] + "\n"
+        tx_i = line.split('/')[-1] + "\n"
+        if len( tx_i ) > 5:
+            txt += tx_i
     with open( f"{outDir}/{studentStr}_Java-Static-Analysis.txt", 'w' ) as f:
         f.write( txt )
     print( f"{TColor.BOLD}{txt}{TColor.ENDC}" )
@@ -309,7 +349,8 @@ def levenshtein_dist( s1 : str, s2 : str ) -> int:
     if len(s1) > len(s2):
         s1, s2 = s2, s1
     # 3. Compute distance and return
-    distances = range(len(s1) + 1)
+    distances  = range(len(s1) + 1)
+    distances_ = None
     for i2, c2 in enumerate(s2):
         distances_ = deque()
         distances_.append( i2+1 )
@@ -318,7 +359,8 @@ def levenshtein_dist( s1 : str, s2 : str ) -> int:
                 distances_.append(distances[i1])
             else:
                 distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
-    return distances_.pop()
+    # return distances_.pop()
+    return distances_.pop() + abs(len(s1)-len(s2)) # HACK
     
 
 
@@ -344,8 +386,12 @@ def search_ranked_student_index_in_list( searchStr : str, studentLst : list[list
     # 2. Rank all students
     for i, student in enumerate( studentLst ):
         stdntNm  = get_student_name( student )
+
         lastLowr = student[0].lower()
         frstLowr = student[1].lower()
+        # lastLowr = student[1].lower()
+        # frstLowr = student[0].lower()
+
         # A. Full Name Search, Ranked by total Levenshtein distance = first + last
         if dbblSrch:
             rtnRank.append( (stdntNm, i, levenshtein_dist( lastLowr, lastSrch )+levenshtein_dist( frstLowr, frstSrch ), ) )
@@ -353,27 +399,86 @@ def search_ranked_student_index_in_list( searchStr : str, studentLst : list[list
         else:
             rtnRank.append( (stdntNm, i, min(levenshtein_dist( lastLowr, searchStr ),levenshtein_dist( frstLowr, searchStr )), ) )
     rtnRank.sort( key = lambda x: x[-1] )
-    rtnRank = rtnRank[ 0 : Nrank ]
+    # rtnRank = rtnRank[ 0 : Nrank ]
     disp_text_header( f"{Nrank} Search Results", 1, 1, 0 )
     for i, student in enumerate( rtnRank ):
         print( f"\t{student[0]}, {student[-1]:02}, {i if (i>0) else '*'}" )
     disp_text_header( f"End", 1, 0, 1 )
     return rtnRank
-    
 
 
+def run_menu( students ):
+    """ Handle user input, per iteration """
+
+    usrCmd = input( "Press [Enter] to evaluate the next student: " ).upper()
+    print()
+
+    rtnState = {
+        'loop'    : "",
+        'iDelta'  :  0 ,
+        'index'   : -1 ,
+        'reverse' : False,
+    }
+
+    ## Handle user input ##
+    # Normal List Progression #
+    if not len( usrCmd ):
+        rtnState['iDelta'] = 1
+    # GOTO Student in Current List #
+    elif 'S:' in usrCmd:
+        searchStr = usrCmd.split(':')[-1].strip().lower()
+        print( f"Search for {searchStr} ..." )
+        ranking = search_ranked_student_index_in_list( searchStr, students, Nrank = _N_SEARCH_R )
+        invalid = True
+        while invalid:
+            srchCmd = input( "Press [Enter] to accept top hit or enter number of desired result, Cancel with 'c': " ).upper()
+            if len( srchCmd ):
+                try: 
+                    rnkChoice = int( srchCmd )
+                    invalid   = False
+                except Exception as e:
+                    if srchCmd == 'Q':
+                        disp_text_header( f"END PROGRAM", 10, preNL = 2, postNL = 1 )
+                        sys.exit(0)
+                    elif srchCmd == 'C':
+                        rnkChoice = -1
+                        invalid   = False
+                    else:
+                        print( f"{srchCmd} was not a choice, Try again, {e}" )
+            else:
+                rnkChoice = 0
+                invalid   = False
+        if rnkChoice >= 0:
+            print( f"Return item {ranking[rnkChoice]} at index {ranking[rnkChoice][1]}" )
+            rtnState['index'] = ranking[rnkChoice][1]
+        rtnState['loop'] = "continue"
+    # Quit #
+    elif 'Q' in usrCmd:
+        disp_text_header( f"END PROGRAM", 10, preNL = 2, postNL = 1 )
+        sys.exit(0)
+    # Repeat Student #
+    elif 'R' in usrCmd:
+        print( f"<<< REPEAT {stdNam} Evaluation! <<<" )
+        rtnState['loop'] = "continue"
+    # Back to Previous Student #
+    elif 'P' in usrCmd:
+        rtnState['iDelta'] = -1
+        print( "^^^ PREVIOUS STUDENT ^^^" )
+        rtnState['reverse'] = True
+        rtnState['loop'   ] = "continue"
+    # Next Student List File #
+    elif 'E' in usrCmd:
+        print( "!///! END LIST !///!" )
+        rtnState['loop'] = "break"
+
+    return rtnState
 
 ########## MAIN ####################################################################################
 
 
 if __name__ == "__main__":
 
-    _LIST_PATHS = ["ugrads.txt", "grads.txt",]
-    _GET_RECENT = True
-    _REPORT_DIR = "output"
-    _SOURCE_DIR = "src/main/java/csci/ooad"
-    _BRANCH_STR = "3"
-    _N_SEARCH_R = 5
+    
 
     os.makedirs( _REPORT_DIR, exist_ok = True )
 
@@ -387,7 +492,19 @@ if __name__ == "__main__":
         Nstdnt   = len( students )
         i        = 0
         reverse  = False
+
+        # Allow search/cancel/quit at the start of each list, Prev/Redo are **disabled** here!
+        stateChange = run_menu( students )
+        loopAction  = stateChange['loop']
+        if stateChange['index'] >= 0:
+            i = stateChange['index']
+        if loopAction == 'break':
+            i = Nstdnt
+            print( f">>> SKIPPED {_LIST_PATH} !! >>>" )
+        
+        # Begin normal list iteration
         while i < Nstdnt:
+            print( f"... Iteration {i} ..." )
             student = students[i]
 
             ### Fetch Submission ###
@@ -428,8 +545,14 @@ if __name__ == "__main__":
 
             ### Run Gradle Checks ###
             print( f"About to run Gradle tests ..." )
-            for _ in range(2):
-                res = gradle_test( dirPrefix = stdDir )
+            try:
+                for _ in range(2):
+                    res = gradle_test( dirPrefix = stdDir )
+                if 'fail' in res:
+                    with open( f"{_REPORT_DIR}/{stdStr}_Test-Results-FAILED.txt", 'w' ) as f:
+                        f.write( res['fail'] )
+            except KeyboardInterrupt:
+                print( "\nUser CANCELLED Gradle test!" )
             print()
 
             mainSrc = find_main( dirPrefix = stdDir )
@@ -459,41 +582,17 @@ if __name__ == "__main__":
 
             disp_text_header( f"{stdNam}, Eval completed!", 5, preNL = 1, postNL = 2 )
 
-            usrCmd = input( "Press [Enter] to evaluate the next student: " ).upper()
-            print()
-
-            ## Handle user input ##
-            # Quit #
-            if 'Q' in usrCmd:
-                disp_text_header( f"END PROGRAM", 10, preNL = 2, postNL = 1 )
-                sys.exit(0)
-            # Back to Previous Student #
-            elif 'P' in usrCmd:
-                i -= 1
-                print( "^^^ PREVIOUS STUDENT ^^^" )
-                reverse = True
-                continue
-            # Next Student List File #
-            elif 'E' in usrCmd:
-                print( "!///! END LIST !///!" )
+            stateChange = run_menu( students )
+            reverse     = stateChange['reverse']
+            loopAction  = stateChange['loop']
+            if stateChange['index'] >= 0:
+                i = stateChange['index']
+            if loopAction == 'break':
                 break
-            # GOTO Student in Current List #
-            elif 'S:' in usrCmd:
-                searchStr = usrCmd.split(':')[-1].strip().lower()
-                print( f"Search for {searchStr} ..." )
-                ranking = search_ranked_student_index_in_list( searchStr, students, Nrank = _N_SEARCH_R )
-                invalid = True
-                while invalid:
-                    srchCmd = input( "Press [Enter] to accept top hit or enter number of desired result: " ).upper()
-                    try: 
-                        rnkChoice = int( srchCmd )
-                        invalid   = False
-                    except Exception as e:
-                        print( f"{srchCmd} was not a choice, Try again, {e}" )
-                i = ranking[rnkChoice][1]
+            elif loopAction == 'continue':
                 continue
             
-            i += 1
+            i += stateChange['iDelta']
 
         disp_text_header( f"COMPLETED {_LIST_PATH}!!", 10, preNL = 1, postNL = 2 )
     disp_text_header( f"Student Evaluation of {_LIST_PATHS} COMPLETED!!", 15, preNL = 1, postNL = 2 )
