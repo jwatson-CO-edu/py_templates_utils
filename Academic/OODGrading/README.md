@@ -52,7 +52,7 @@ on each line.
       - EITHERNAME
    * Type [q] then [Enter] to quit the program immediately. 
 - The script iterates over the students within each file in alphabetic order by last name, Per student:
-    * Searches for HTML file from Canvas containing the GitHub repo link, Clones repo
+    * Searches for HTML file from Canvas containing the GitHub repo link
     * Clones repo and checks out the most recent branch containing the search string you specified. (If no branches contain the search string, then the most recently-created branch will be checked out.)
     * Runs and prints Gradle test results. When one or more tests fail, test output is written to a file named after the student will appear in a new "output" subdirectory.
     (You may cancel the current test with [Ctrl]+[c] (`SIGTERM`))  
