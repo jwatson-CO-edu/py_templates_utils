@@ -34,8 +34,12 @@ on each line.
 
 ## Optional
 * Change the following in [HW_Config.json](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/HW_Config.json) under the heading that matches your OS:
-   - "_INTELLIJ_PATH" : If it differs for your machine.
-   - "_PMD_PATH": If it differs for your machine.
+   - "_SRCH_MARGN": Search breadth in lines, defines how much code is retrieved for each keyword hit
+   - "_OPEN_SNPPT": Flag for whether you want code search hits to be displayed automatically in your editor of choice
+   - There are several OS-specific fields. I **assumed** that these will be the same for every Linux user, but they may not be. If your OS is not represented, you will need to create a new category entry for your OS, and associated sub-fields. sub-fields include:
+      * "_INTELLIJ_PATH" : If it differs for your machine.
+      * "_PMD_PATH": If it differs for your machine.
+      * "_EDITOR_COMMAND": The editor that will display the summarized code snippets. It is recommended that this be a minimal editor with basic highlighting, as the snippets file will not be syntactically correct. 
 * You can change "[OOD_Java-Rules.xml](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/OOD_Java-Rules.xml)" to [silence nuisance alerts](https://pmd.github.io/pmd/pmd_userdocs_making_rulesets.html#bulk-adding-rules). This [reference](https://pmd.github.io/pmd/pmd_rules_java.html) contains a description of all the Java rules that are part of PMD.
    
 # Program Flow
