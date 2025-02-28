@@ -28,7 +28,8 @@ on each line.
    - "_LIST_PATHS": A list of string filenames created in the previous step. This must be a list, even if it only one file name.
    - "_SOURCE_DIR": Root directory of source files used by the Gradle project.
    - "_BRANCH_STR": A search string that will retrieve the appropriate branch. *Please make sure it is broad enough to capture every possible branch name, since there are no naming requirements for branches.*  
-**NOTE**: When the branch search does not return any hits, the most recently-created branch will be checked out automatically!
+   **NOTE**: When the branch search does not return any hits, the most recently-created branch will be checked out automatically!
+   - "_TOPIC_SRCH": List of search strings relevant to this assignment, such as pattern names. **Not** case sensitive. (See below.)
 1. At the root folder (terminal): `python3.11 00_clone_test_build_all.py`
 
 ## Optional
@@ -52,7 +53,7 @@ on each line.
     * Runs and prints Gradle test results. When one or more tests fail, test output is written to a file named after the student will appear in a new "output" subdirectory.
     (You may cancel the current test with [Ctrl]+[c] (`SIGTERM`))  
     (**WARNING**: Gradle sometimes fails to consistently print all results to `stdout`, which is where Python captures it. You may wish to rerun tests from inside IntelliJ. (See below.))
-    * Searches for `main()`, **IGNORE!**
+    * Gathers snippets of Java code into an annotated JAVA file that is named after the student. This will appear in the "output" subdirectory. (See above.)
     * Runs code style checks via [PMD Static Analysis](https://pmd.github.io/pmd/index.html). A report named after the student will appear in a new "output" subdirectory.
     * Opens IntelliJ IDEA with a view on the student project. You can re-run tests, inspect code, and generate class diagrams from here.
     * **You must close the IntelliJ window to finish the student evaluation!**
