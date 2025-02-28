@@ -1,17 +1,21 @@
 {
     "Linux" : {
         "_INTELLIJ_PATH" : "/opt/idea/bin/idea",
-        "_PMD_PATH"      : "/opt/pmd-bin-7.10.0/bin/pmd"
+        "_PMD_PATH"      : "/opt/pmd-bin-7.10.0/bin/pmd",
+        "_EDITOR_COMMAND": "xed"
     },
     "Settings" : {
         "_PMD_JAVA_RULES": "OOD_Java-Rules.xml",
         "_GET_RECENT"    : true,
         "_REPORT_DIR"    : "output",
-        "_N_SEARCH_R"    : 5
+        "_N_SEARCH_R"    : 8
     },
     "HWX" : {
-        "_LIST_PATHS": ["grads.txt"],
+        "_LIST_PATHS": ["ugrads.txt","grads.txt"],
         "_SOURCE_DIR": "src/main/java/csci/ooad",
-        "_BRANCH_STR": "3"
+        "_BRANCH_STR": "4",
+        "_TOPIC_SRCH": ["factory","builder","food"],
+        "_SRCH_MARGN": 40,
+        "_OPEN_SNPPT": true
     }
 }

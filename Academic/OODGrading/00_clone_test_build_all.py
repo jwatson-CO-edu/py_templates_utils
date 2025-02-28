@@ -6,6 +6,7 @@ import subprocess, os, sys, platform, json
 from pprint import pprint
 from collections import deque
 from pprint import pprint
+from time import sleep
 
 
 ##### Constants #####
@@ -26,6 +27,7 @@ try:
     ### Platform ###
     _INTELLIJ_PATH  = config[_USER_SYSTEM]["_INTELLIJ_PATH"]
     _PMD_PATH       = config[_USER_SYSTEM]["_PMD_PATH"]
+    _EDITOR_COMMAND = config[_USER_SYSTEM]["_EDITOR_COMMAND"]
     ### Settings ###
     _PMD_JAVA_RULES = config["Settings"]["_PMD_JAVA_RULES"]
     _GET_RECENT     = config["Settings"]["_GET_RECENT"]
@@ -35,6 +37,9 @@ try:
     _LIST_PATHS = config["HWX"]["_LIST_PATHS"]
     _SOURCE_DIR = config["HWX"]["_SOURCE_DIR"]
     _BRANCH_STR = config["HWX"]["_BRANCH_STR"]
+    _TOPIC_SRCH = config["HWX"]["_TOPIC_SRCH"]
+    _SRCH_MARGN = config["HWX"]["_SRCH_MARGN"]
+    _OPEN_SNPPT = config["HWX"]["_OPEN_SNPPT"]
 except KeyError as err:
     print( f"\n\033[91mFAILED to load config file!, {err}\033[0m\n" )
 
@@ -337,7 +342,7 @@ def run_PMD_report( dirPrefix : str = "", codeDir : str = "", outDir : str = "",
 
 ########## STRING ANALYSIS #########################################################################
 
-def levenshtein_dist( s1 : str, s2 : str ) -> int:
+def levenshtein_search_dist( s1 : str, s2 : str ) -> int:
     """ Get the edit distance between two strings """
     # Author: Salvador Dali, https://stackoverflow.com/a/32558749
     # 1. Trivial cases: One string is empty
@@ -348,6 +353,8 @@ def levenshtein_dist( s1 : str, s2 : str ) -> int:
     # 2. This algo assumes second string is at least as long as the first
     if len(s1) > len(s2):
         s1, s2 = s2, s1
+    if s1 in s2:
+        return 0
     # 3. Compute distance and return
     distances  = range(len(s1) + 1)
     distances_ = None
@@ -361,6 +368,90 @@ def levenshtein_dist( s1 : str, s2 : str ) -> int:
                 distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
     # return distances_.pop()
     return distances_.pop() + abs(len(s1)-len(s2)) # HACK
+
+
+def split_lines_with_depth_change( nptStr : str ):
+    """ Split the string into lines, Return lines and annotations of per-line changes in block depth """
+    lines    = nptStr.split('\n')
+    rtnLines = deque()
+    linDepth = deque()
+    reserved = ['(', ')', '{', '}', '+', '-', '*', '/', '.']
+    comment  = False
+    for line in lines:
+        if '/*' in line:
+            comment = True
+        lParts = line.split("//", 1)  # Strip comments.
+        lCode  = f"{lParts[0]}"
+        for word in reserved:
+            lCode  = lCode.replace( word, f" {word} ")
+        tknLn  = lCode.split()
+        dlDpth = tknLn.count('{') - tknLn.count('}')
+        linDepth.append( dlDpth )
+        # Handle interference betweeen line number annotation from script and multi-line comments from student
+        rtnLines.append( f"// {line}" if comment else line )
+        if '*/' in line:
+            comment = False
+    return list( rtnLines ), list( linDepth )
+
+
+def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : list[str], searchOver : int = 40 ):
+    """ Attempt to grab relevant portion of code """
+    lines, lnDeltaDepth = split_lines_with_depth_change( javaSourceStr )
+    N = len( lines )
+    depth    = 0
+    covered  = set([])
+    rtnLines = {
+        "chunks" : list(),
+        "ranges" : list(),
+    }
+    for i, line_i in enumerate( lines ):
+        if i in covered:
+            continue
+        depth += lnDeltaDepth[i]
+        hit = False
+        for sTerm in searchTerms:
+            if sTerm in line_i:
+                hit = True
+                break
+        if hit:
+            blockDex = i
+            ovrDpth  = 0
+            for j in range( i, i+searchOver+1 ):
+                dDelta_j = lnDeltaDepth[j]
+                if dDelta_j > 0:
+                    blockDex = j
+                    ovrDpth += dDelta_j
+                elif dDelta_j < 0:
+                    break
+            bgn = i
+            end = min( i+searchOver+1, N )
+            if ovrDpth > 0:
+                bgn = blockDex
+                end = blockDex
+                # Search backwards for the beginning of the block
+                for j in range( blockDex, blockDex-searchOver-1, -1 ):
+                    if j < 0:
+                        bgn = 0
+                        break
+                    ovrDpth -= lnDeltaDepth[j]
+                    bgn      = j
+                    if (ovrDpth <= 0):
+                        break
+                # Search forwards for the end of the block
+                for j in range( blockDex, blockDex+searchOver+1 ):
+                    if j >= N:
+                        end = N
+                        break
+                    ovrDpth += lnDeltaDepth[j]
+                    end      = j+1
+                    if (ovrDpth <= 0):
+                        break
+                bgn = min( max( 0, bgn-int(searchOver/4)) , i )
+                end = min( end+int(searchOver/4), N )
+            covered.update( list(range(bgn,end)) )
+            rtnLines['chunks'].append( lines[bgn:end] )
+            rtnLines['ranges'].append( [bgn,end,] )
+    return rtnLines
     
 
 
@@ -386,20 +477,16 @@ def search_ranked_student_index_in_list( searchStr : str, studentLst : list[list
     # 2. Rank all students
     for i, student in enumerate( studentLst ):
         stdntNm  = get_student_name( student )
-
         lastLowr = student[0].lower()
         frstLowr = student[1].lower()
-        # lastLowr = student[1].lower()
-        # frstLowr = student[0].lower()
-
         # A. Full Name Search, Ranked by total Levenshtein distance = first + last
         if dbblSrch:
-            rtnRank.append( (stdntNm, i, levenshtein_dist( lastLowr, lastSrch )+levenshtein_dist( frstLowr, frstSrch ), ) )
+            rtnRank.append( (stdntNm, i, levenshtein_search_dist( lastLowr, lastSrch )+levenshtein_search_dist( frstLowr, frstSrch ), ) )
         # B. Single Name Search, Ranked by min Levenshtein distance across {first,last,}
         else:
-            rtnRank.append( (stdntNm, i, min(levenshtein_dist( lastLowr, searchStr ),levenshtein_dist( frstLowr, searchStr )), ) )
+            rtnRank.append( (stdntNm, i, min(levenshtein_search_dist( lastLowr, searchStr ),levenshtein_search_dist( frstLowr, searchStr )), ) )
     rtnRank.sort( key = lambda x: x[-1] )
-    # rtnRank = rtnRank[ 0 : Nrank ]
+    rtnRank = rtnRank[ 0 : Nrank ]
     disp_text_header( f"{Nrank} Search Results", 1, 1, 0 )
     for i, student in enumerate( rtnRank ):
         print( f"\t{student[0]}, {student[-1]:02}, {i if (i>0) else '*'}" )
@@ -409,17 +496,14 @@ def search_ranked_student_index_in_list( searchStr : str, studentLst : list[list
 
 def run_menu( students ):
     """ Handle user input, per iteration """
-
     usrCmd = input( "Press [Enter] to evaluate the next student: " ).upper()
     print()
-
     rtnState = {
         'loop'    : "",
         'iDelta'  :  0 ,
         'index'   : -1 ,
         'reverse' : False,
     }
-
     ## Handle user input ##
     # Normal List Progression #
     if not len( usrCmd ):
@@ -473,14 +557,42 @@ def run_menu( students ):
 
     return rtnState
 
+
+def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], searchOver : int = 40, fileExt : str = "java" ):
+    """ Get identified chunks in the code """
+    rtnStr  = ""
+    jvPaths = [path for path in os.listdir( srcDir ) if f".{fileExt}".lower() in path.lower()]
+    for path in jvPaths:
+        rtnStr += f"///// {path} /////\n"
+        with open( os.path.join( srcDir, path ), 'r' ) as f_i:
+            src_i = f"{f_i.read()}"
+            res_i = grab_identified_sections_of_java_source( src_i, searchTerms, searchOver )
+            for j, chunk_j in enumerate( res_i['chunks'] ):
+                range_j = res_i['ranges'][j]
+                rtnStr += f"/// Lines: {range_j} ///\n"
+                for k, line_k in enumerate( chunk_j ):
+                    found = False
+                    kWord = ""
+                    for term in searchTerms:
+                        if term.lower() in f"{line_k}".lower():
+                            found = True
+                            kWord = term
+                            break
+                    rtnStr += f"/*{range_j[0]+k: 4}*/\t{line_k}{f' // << kw: {kWord} <<' if found else ''}\n"
+                rtnStr += f"\n"
+        rtnStr += f"\n\n"
+    return rtnStr
+
+
+
 ########## MAIN ####################################################################################
 
 
 if __name__ == "__main__":
 
-    
-
+    print( f"Create output directory: \"{_REPORT_DIR}\"" )
     os.makedirs( _REPORT_DIR, exist_ok = True )
+    sleep( 0.125 ) # Error about missing directory, Why would this take time?
 
     htPaths = [path for path in os.listdir() if ".html" in path]
 
@@ -548,6 +660,9 @@ if __name__ == "__main__":
             try:
                 for _ in range(2):
                     res = gradle_test( dirPrefix = stdDir )
+                if len( res['err'] ):
+                    with open( f"{_REPORT_DIR}/{stdStr}_BUILD-FAILED.txt", 'w' ) as f:
+                        f.write( res['err'] )
                 if 'fail' in res:
                     with open( f"{_REPORT_DIR}/{stdStr}_Test-Results-FAILED.txt", 'w' ) as f:
                         f.write( res['fail'] )
@@ -555,27 +670,22 @@ if __name__ == "__main__":
                 print( "\nUser CANCELLED Gradle test!" )
             print()
 
-            mainSrc = find_main( dirPrefix = stdDir )
-            if (mainSrc is not None):
-                print( f"Main Function: {mainSrc}\n" )
+            ### Gather Snippets ###
+            print( f"About to fetch relevant code ..." )
+            sdtSrc = grab_identified_source_chunks( os.path.join( stdDir, _SOURCE_DIR ), _TOPIC_SRCH, _SRCH_MARGN, "java" )
+            stdSnp = f"{_REPORT_DIR}/{stdStr}_related_source.java"
+            with open( stdSnp, 'w' ) as f:
+                f.write( sdtSrc )
+            if _OPEN_SNPPT:
+                run_cmd( f"{_EDITOR_COMMAND} {stdSnp}" )
 
-                prep_build_spec( dirPrefix = stdDir, buildFile = "build.gradle" )
-
-                print( f"About to build Gradle project ..." )
-                res = gradle_build_clean( dirPrefix = stdDir )
-                print()
-
-                print( f"About to run Gradle project ..." )
-                run_gradle_build( dirPrefix = stdDir, jarDir = "build/libs", runEXT = "JAR" )
-                print()
-            else:
-                print( f"There was NO MAIN FUNCTION found in {stdDir}!!\n" )
-
+            ### Static Analysis ###
             print( f"About to run code style checks ..." )
             disp_text_header( f"Static Analsys for {stdNam}", 3, preNL = 1, postNL = 1 )
             run_PMD_report( dirPrefix = stdDir, codeDir = _SOURCE_DIR, outDir = _REPORT_DIR, studentStr = stdStr )
             disp_text_header( f"{stdNam} Static Analsys COMPLETE", 3, preNL = 0, postNL = 1 )
 
+            ### IntelliJ View ###
             print( f"About to inspect Java project ..." )
             inspect_project( dirPrefix = stdDir )
             print()
@@ -596,3 +706,7 @@ if __name__ == "__main__":
 
         disp_text_header( f"COMPLETED {_LIST_PATH}!!", 10, preNL = 1, postNL = 2 )
     disp_text_header( f"Student Evaluation of {_LIST_PATHS} COMPLETED!!", 15, preNL = 1, postNL = 2 )
+
+
+########## SPARE PARTS #############################################################################
+
