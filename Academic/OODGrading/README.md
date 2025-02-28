@@ -33,7 +33,7 @@ on each line.
 1. At the root folder (terminal): `python3.11 00_clone_test_build_all.py`
 
 ## Optional
-* Change the following in [HW_Config.json](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/HW_Config.json) under the heading that matches your OS:
+* You can change the following in [HW_Config.json](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/HW_Config.json), as needed:
    - "_SRCH_MARGN": Search breadth in lines, defines how much code is retrieved for each keyword hit
    - "_OPEN_SNPPT": Flag for whether you want code search hits to be displayed automatically in your editor of choice
    - There are several OS-specific fields. I **assumed** that these will be the same for every Linux user, but they may not be. If your OS is not represented, you will need to create a new category entry for your OS, and associated sub-fields. sub-fields include:
