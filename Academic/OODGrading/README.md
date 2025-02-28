@@ -74,6 +74,7 @@ on each line.
 * `[Y]` Config JSON so that users do not need to modify code every assignment, 2025-02-25: Added and TESTED!
    - `{?}` IF someone generates a pull req. for Windows functionality, THEN add Windows fields to the JSON.
 * `[Y]` Automatically export failing test results to a file, 2025-02-21: Added, TESTED!
+* `[Y]` Automatically export failing build results to a file, 2025-02-27: Added, TESTED!
 * `{?}` Allow users to add/commit files to the repo? YAGNI?
    - `[ ]` Create "Eval" dir
    - `[ ]` Scrape for screenshots since beginning of per-student eval
@@ -81,6 +82,7 @@ on each line.
    - `{?}` Automatically send failed test report here?
 
 # Change Log
+* 2025-02-27: A summarized JAVA file is created for each student based on the specified search terms. Config JSON has been split into categories, including OS-specific fields. Small editorial and QOL adjustments. 
 * 2025-02-25: Config JSON so that users do not need to modify code every assignment.
 * 2025-02-21: Fixed issue with multiple matching branches that causes the _earliest_ of matches to be checked out instead of the **latest**, Fixed problems with name search.
 
