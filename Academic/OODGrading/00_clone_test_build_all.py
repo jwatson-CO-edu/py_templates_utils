@@ -291,6 +291,7 @@ def get_most_recent_branch( dirPrefix : str = "", reqStr = None ):
     """ Extract the branch that was most recently created """
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ ls-remote --heads --sort=-authordate origin"
     out = run_cmd( cmd )['out']
+    print( f"{out}" )
     rtn = ""
     if reqStr is not None:
         req = f"{reqStr}"
@@ -313,11 +314,12 @@ def checkout_branch( dirPrefix : str = "", branchName : str = "" ):
     """ Check out the specified branch """
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ stash save"
     run_cmd( cmd )
-    cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ checkout -f origin/{branchName}" # "-f": Force
+    cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ checkout -t origin/{branchName}" 
     out = run_cmd( cmd )['out']
-    print( f"{out}" )
+    cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ pull origin {branchName}" 
+    out += run_cmd( cmd )['out']
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ status" # "-f": Force
-    out = run_cmd( cmd )['out']
+    out += run_cmd( cmd )['out']
     print( f"{out}" )
 
 
@@ -653,7 +655,9 @@ if __name__ == "__main__":
             if _GET_RECENT:
                 print( f"About to check out recent branch ..." )
                 brName = get_most_recent_branch( dirPrefix = stdDir, reqStr = _BRANCH_STR )
-                checkout_branch( dirPrefix = stdDir, branchName = brName )
+                if brName is not None:
+                    print( f"About to fetch {brName} branch ..." )
+                    checkout_branch( dirPrefix = stdDir, branchName = brName )
 
             ### Run Gradle Checks ###
             print( f"About to run Gradle tests ..." )
