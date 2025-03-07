@@ -33,6 +33,8 @@ try:
     _GET_RECENT     = config["Settings"]["_GET_RECENT"]
     _REPORT_DIR     = config["Settings"]["_REPORT_DIR"]
     _N_SEARCH_R     = config["Settings"]["_N_SEARCH_R"]
+    _RUN_TESTS      = config["Settings"]["_RUN_TESTS"]
+    _NUM_TESTS      = config["Settings"]["_NUM_TESTS"]
     ### Assignment ###
     _LIST_PATHS = config["HWX"]["_LIST_PATHS"]
     _SOURCE_DIR = config["HWX"]["_SOURCE_DIR"]
@@ -42,7 +44,6 @@ try:
     _OPEN_SNPPT = config["HWX"]["_OPEN_SNPPT"]
 except KeyError as err:
     print( f"\n\033[91mFAILED to load config file!, {err}\033[0m\n" )
-
 
 
 
@@ -149,9 +150,14 @@ def run_cmd( ruleStr : str, timeout_s : int = 0, suppressErr : bool = False ) ->
 
 def gradle_test( dirPrefix : str = "" ):
     """ Run all Gradle tests """
-    if len( dirPrefix ):
-        dirPrefix = f"./{dirPrefix}"
-    cmd = f"gradle cleanTest test --no-build-cache -d -p {dirPrefix}"
+    # if len( dirPrefix ):
+    #     dirPrefix = f"./{dirPrefix}"
+    res = run_cmd( f"rm -rf {dirPrefix}/.idea" )
+    res = run_cmd( f"gradle clean -p {dirPrefix}", suppressErr = True )
+    res = run_cmd( f"gradle build -p {dirPrefix} -cp src", suppressErr = True )
+    cmd = f"gradle test --no-build-cache -d -p {dirPrefix}"
+    # cmd = f"gradle cleanTest test --no-build-cache -d -p {dirPrefix}"
+    # cmd = f"gradle cleanTest test --scan --no-build-cache -d -p {dirPrefix}" # WAY TOO LONG
     res = run_cmd( cmd, suppressErr = True )
     if len( res['err'] ):
         print( f"ERROR:\n{res['err']}" )
@@ -289,9 +295,10 @@ def get_folder_from_github_addr( gitAddr ):
 
 def get_most_recent_branch( dirPrefix : str = "", reqStr = None ):
     """ Extract the branch that was most recently created """
-    cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ ls-remote --heads --sort=-authordate origin"
+    # cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ ls-remote --heads --sort=-authordate origin"
+    cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ ls-remote --heads --sort=-committerdate origin"
     out = run_cmd( cmd )['out']
-    print( f"{out}" )
+    # print( f"{out}" )
     rtn = ""
     if reqStr is not None:
         req = f"{reqStr}"
@@ -314,7 +321,8 @@ def checkout_branch( dirPrefix : str = "", branchName : str = "" ):
     """ Check out the specified branch """
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ stash save"
     run_cmd( cmd )
-    cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ checkout -t origin/{branchName}" 
+    # cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ checkout -t origin/{branchName}" 
+    cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ checkout origin/{branchName}" 
     out = run_cmd( cmd )['out']
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ pull origin {branchName}" 
     out += run_cmd( cmd )['out']
@@ -328,8 +336,14 @@ def checkout_branch( dirPrefix : str = "", branchName : str = "" ):
 
 def run_PMD_report( dirPrefix : str = "", codeDir : str = "", outDir : str = "", studentStr : str = "" ):
     """ Run a PMD report for Java """
-    cmd   = f"{_PMD_PATH} check -d ./{dirPrefix}/{codeDir} -R ./{_PMD_JAVA_RULES} -f text"
-    out   = run_cmd( cmd )['out']
+    path  = os.path.join( dirPrefix, codeDir )
+    cmd   = f"{_PMD_PATH} check -d ./{path} -R ./{_PMD_JAVA_RULES} -f text"
+    res   = run_cmd( cmd )
+    while ("No such file" in res['err']):
+        path = os.path.dirname( path )
+        cmd  = f"{_PMD_PATH} check -d ./{path} -R ./{_PMD_JAVA_RULES} -f text"
+        res  = run_cmd( cmd )
+    out   = res['out']
     lines =  out.split('\n')
     txt   = ""
     for line in lines:
@@ -418,7 +432,7 @@ def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : 
         if hit:
             blockDex = i
             ovrDpth  = 0
-            for j in range( i, i+searchOver+1 ):
+            for j in range( i, min( N, i+searchOver+1 ) ):
                 dDelta_j = lnDeltaDepth[j]
                 if dDelta_j > 0:
                     blockDex = j
@@ -431,7 +445,7 @@ def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : 
                 bgn = blockDex
                 end = blockDex
                 # Search backwards for the beginning of the block
-                for j in range( blockDex, blockDex-searchOver-1, -1 ):
+                for j in range( blockDex, max( 0, blockDex-searchOver-1 ), -1 ):
                     if j < 0:
                         bgn = 0
                         break
@@ -455,6 +469,8 @@ def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : 
             rtnLines['ranges'].append( [bgn,end,] )
     return rtnLines
     
+
+
 
 
 ########## UTILITIES && FEATURES ###################################################################
@@ -560,13 +576,31 @@ def run_menu( students ):
     return rtnState
 
 
+def get_all_file_paths( directory ):
+    # Source: https://www.google.com/search?client=firefox-b-1-lm&channel=entpr&q=python+list+of+paths+from+recursive+walk
+    file_paths = []
+    # print( directory )
+    for dirpath, _, filenames in os.walk( directory ):
+        # print( dirpath )
+        for filename in filenames:
+            file_path = os.path.join( dirpath, filename )
+            file_paths.append( file_path )
+    # print( file_paths )
+    return file_paths
+
+
 def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], searchOver : int = 40, fileExt : str = "java" ):
     """ Get identified chunks in the code """
     rtnStr  = ""
-    jvPaths = [path for path in os.listdir( srcDir ) if f".{fileExt}".lower() in path.lower()]
+    # jvPaths = [path for path in os.listdir( srcDir ) if f".{fileExt}".lower() in path.lower()]
+    jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
+    while not len( jvPaths ):
+        srcDir  = os.path.dirname( srcDir )
+        jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
     for path in jvPaths:
         rtnStr += f"///// {path} /////\n"
-        with open( os.path.join( srcDir, path ), 'r' ) as f_i:
+        # with open( os.path.join( srcDir, path ), 'r' ) as f_i:
+        with open( path, 'r' ) as f_i:
             src_i = f"{f_i.read()}"
             res_i = grab_identified_sections_of_java_source( src_i, searchTerms, searchOver )
             for j, chunk_j in enumerate( res_i['chunks'] ):
@@ -584,6 +618,54 @@ def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], search
                 rtnStr += f"\n"
         rtnStr += f"\n\n"
     return rtnStr
+
+
+def count_block_lines( srcDir : str, searchOver : int = 3, fileExt : str = "java" ):
+    """ Count the number of lines in each block """
+    rtnLst  = deque()
+    jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
+    while not len( jvPaths ):
+        srcDir  = os.path.dirname( srcDir )
+        jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
+    for path in jvPaths:
+        # with open( os.path.join( srcDir, path ), 'r' ) as f_i:
+        with open( path, 'r' ) as f_i:
+            src_i = f"{f_i.read()}"
+            lns_i, dpt_i = split_lines_with_depth_change( src_i )
+            stk_i = deque()
+            for j, lin_j in enumerate( lns_i ):
+                dep_j = dpt_i[j]
+                # Push an opened block onto the stack
+                if dep_j > 0:
+                    # bgn_i = j # max( j-searchOver, 0 )
+                    stk_i.append({
+                        'path'  : f"{path}".split('/')[-1],
+                        'begin' : j+1,
+                        # 'lines' : deque( lns_i[ bgn_i : j ] ),
+                        'lines' : deque(),
+                    })
+                # All existing stack elems accrue the line
+                for itm_k in stk_i:
+                    itm_k['lines'].append( lin_j )
+                # Pop a closed block from the stack
+                if (dep_j < 0) and len( stk_i ):
+                    rtnLst.append( stk_i.pop() )
+    rtnLst = list( rtnLst )
+    rtnLst.sort( key = lambda x: len( x['lines'] ), reverse = True )
+    return rtnLst
+
+
+def report_block_sizes( srcDir : str, searchOver : int = 3, fileExt : str = "java" ):
+    """ Print a report of all code blocks """
+    blocks  = count_block_lines( srcDir, searchOver, fileExt )
+    wdtPath = max( [len(elem['path']) for elem in blocks] ) if len( blocks ) else 3
+    wdtSize = len( f"{len(blocks[0]['lines'])}" ) if len( blocks ) else 3
+    for block in blocks[:25]:
+        path = block['path']
+        size = len( block['lines'] )
+        print( f"{path: <{wdtPath}} : {size: >{wdtSize}} : On Line {block['begin']: >{wdtSize}}" )
+        # for i in range( searchOver+1 ):
+        #     print( f"\t{block['lines'][i]}" )
 
 
 
@@ -660,19 +742,20 @@ if __name__ == "__main__":
                     checkout_branch( dirPrefix = stdDir, branchName = brName )
 
             ### Run Gradle Checks ###
-            print( f"About to run Gradle tests ..." )
-            try:
-                for _ in range(2):
-                    res = gradle_test( dirPrefix = stdDir )
-                if len( res['err'] ):
-                    with open( f"{_REPORT_DIR}/{stdStr}_BUILD-FAILED.txt", 'w' ) as f:
-                        f.write( res['err'] )
-                if 'fail' in res:
-                    with open( f"{_REPORT_DIR}/{stdStr}_Test-Results-FAILED.txt", 'w' ) as f:
-                        f.write( res['fail'] )
-            except KeyboardInterrupt:
-                print( "\nUser CANCELLED Gradle test!" )
-            print()
+            if _RUN_TESTS:
+                print( f"About to run Gradle tests ..." )
+                try:
+                    for _ in range( _NUM_TESTS ):
+                        res = gradle_test( dirPrefix = stdDir )
+                    if len( res['err'] ):
+                        with open( f"{_REPORT_DIR}/{stdStr}_BUILD-FAILED.txt", 'w' ) as f:
+                            f.write( res['err'] )
+                    if 'fail' in res:
+                        with open( f"{_REPORT_DIR}/{stdStr}_Test-Results-FAILED.txt", 'w' ) as f:
+                            f.write( res['fail'] )
+                except KeyboardInterrupt:
+                    print( "\nUser CANCELLED Gradle test!" )
+                print()
 
             ### Gather Snippets ###
             print( f"About to fetch relevant code ..." )
@@ -688,6 +771,11 @@ if __name__ == "__main__":
             disp_text_header( f"Static Analsys for {stdNam}", 3, preNL = 1, postNL = 1 )
             run_PMD_report( dirPrefix = stdDir, codeDir = _SOURCE_DIR, outDir = _REPORT_DIR, studentStr = stdStr )
             disp_text_header( f"{stdNam} Static Analsys COMPLETE", 3, preNL = 0, postNL = 1 )
+
+            ### Search for Excessive Functions && Classes ###
+            disp_text_header( f"Class && Function Lengths for {stdNam}", 3, preNL = 1, postNL = 0 )
+            report_block_sizes( os.path.join( stdDir, _SOURCE_DIR ), searchOver = 2 )
+            disp_text_header( f"{stdNam} Verbosity Check COMPLETE", 3, preNL = 0, postNL = 1 )
 
             ### IntelliJ View ###
             print( f"About to inspect Java project ..." )
