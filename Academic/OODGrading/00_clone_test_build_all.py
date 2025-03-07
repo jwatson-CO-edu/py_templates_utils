@@ -35,6 +35,7 @@ try:
     _N_SEARCH_R     = config["Settings"]["_N_SEARCH_R"]
     _RUN_TESTS      = config["Settings"]["_RUN_TESTS"]
     _NUM_TESTS      = config["Settings"]["_NUM_TESTS"]
+    _N_BIG_BLK      = config["Settings"]["_N_BIG_BLK"]
     ### Assignment ###
     _LIST_PATHS = config["HWX"]["_LIST_PATHS"]
     _SOURCE_DIR = config["HWX"]["_SOURCE_DIR"]
@@ -660,7 +661,7 @@ def report_block_sizes( srcDir : str, searchOver : int = 3, fileExt : str = "jav
     blocks  = count_block_lines( srcDir, searchOver, fileExt )
     wdtPath = max( [len(elem['path']) for elem in blocks] ) if len( blocks ) else 3
     wdtSize = len( f"{len(blocks[0]['lines'])}" ) if len( blocks ) else 3
-    for block in blocks[:25]:
+    for block in blocks[:_N_BIG_BLK]:
         path = block['path']
         size = len( block['lines'] )
         print( f"{path: <{wdtPath}} : {size: >{wdtSize}} : On Line {block['begin']: >{wdtSize}}" )

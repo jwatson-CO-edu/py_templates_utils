@@ -8,13 +8,16 @@
         "_PMD_JAVA_RULES": "OOD_Java-Rules.xml",
         "_GET_RECENT"    : true,
         "_REPORT_DIR"    : "output",
-        "_N_SEARCH_R"    : 8
+        "_N_SEARCH_R"    : 8,
+        "_RUN_TESTS"     : false,
+        "_NUM_TESTS"     : 2,
+        "_N_BIG_BLK"     : 25
     },
     "HWX" : {
-        "_LIST_PATHS": ["ugrads.txt","grads.txt"],
+        "_LIST_PATHS": ["interviews.txt"],
         "_SOURCE_DIR": "src/main/java/csci/ooad",
-        "_BRANCH_STR": "4",
-        "_TOPIC_SRCH": ["factory","builder","food"],
+        "_BRANCH_STR": "5",
+        "_TOPIC_SRCH": ["strat","strategy","interface","action"],
         "_SRCH_MARGN": 40,
         "_OPEN_SNPPT": true
     }
