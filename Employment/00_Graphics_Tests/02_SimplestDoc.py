@@ -67,6 +67,14 @@ class TextBox:
         self.xySizPx = xySizPx
         self.pad_px  = padding
 
+    @staticmethod
+    def from_Boxes( boxLst, padding ):
+        """ Get `TextBox`es from `Box`es """
+        rtnBxs = list()
+        for box in boxLst:
+            rtnBxs.append( TextBox( "", box.xyLocPx[:], box.xySizPx[:], padding ) )
+        return rtnBxs
+
     def get_text_start_abs( self ):
         """ Get the absolute location of the text start """
         return (self.xyLocPx[0]+self.pad_px, self.xyLocPx[1]+self.pad_px,)
@@ -181,6 +189,13 @@ class ResumeFactory:
         self.add_styled_rectangle( (self.xMin+_H_ROW1+_CELL_PAD, self.yMin), (self.textWidth-2*_H_ROW1-2*_CELL_PAD, _H_ROW1), "MainBox", radius = 40, layerName = "bio" )
         self.add_styled_rectangle( (self.xMax-_H_ROW1, self.yMin), (_H_ROW1, _H_ROW1), "MainBox", radius = 40, layerName = "bio" )
         self.save()
+
+    def test03( self ):
+        """ Lay out an example document """
+        _CELL_PAD =  40
+        _H_ROW1   = 300
+        row1      = Box( self.origin, (self.textWidth, _H_ROW1,) )
+        textBoxes = TextBox.from_Boxes( row1.h_divide( [_H_ROW1, self.textWidth-2*_H_ROW1-2*_CELL_PAD,_H_ROW1,], _CELL_PAD ) )
 
 
 
