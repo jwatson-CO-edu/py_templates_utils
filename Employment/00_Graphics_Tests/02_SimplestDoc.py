@@ -6,6 +6,7 @@
 ### Special ###
 import svgwrite
 import cairosvg
+import numpy as np
 
 
 ##### Constants #####
@@ -16,6 +17,63 @@ _DOC_DPI       = 300
 _DOC_WIDTH_PX  = int( _DOC_WIDTH_IN  * _DOC_DPI )
 _DOC_HEIGHT_PX = int( _DOC_HEIGHT_IN * _DOC_DPI )
 _DOC_MARGIN_PX = int( _DOC_MARGIN_IN * _DOC_DPI )
+
+
+
+########## DOCUMENT LAYOUT #########################################################################
+
+class Box:
+    """ Rectangular Region """
+
+    def __init__( self, xyLocPx, xySizPx ):
+        """ Set necessary parameters """
+        self.xyLocPx = xyLocPx
+        self.xySizPx = xySizPx
+
+    def h_divide( self, lenList, hPadPx = -1.0 ):
+        """ Horizontally devide the box """
+        nuLst = list()
+        N     = len(lenList)
+        if hPadPx > 0.0:
+            for i, len_i in enumerate( lenList ):
+                nuLst.append( len_i )
+                if i < (N-1):
+                    nuLst.append( hPadPx )
+            lenList = nuLst[:]
+        tot = sum( lenList )
+        lst = np.array( lenList ) / tot * self.xySizPx[0]
+        if hPadPx > 0.0:
+            padLen = lst[1]
+        bxs = list()
+        bgn = self.xyLocPx[:]
+        for len_i in lst:
+            if hPadPx > 0.0:
+                if len_i > padLen:
+                    bxs.append(  Box( bgn[:], (len_i, self.xySizPx[1],) )  )
+            else:
+                bxs.append(  Box( bgn[:], (len_i, self.xySizPx[1],) )  )
+            bgn[0] += len_i
+        return bxs
+
+
+
+class TextBox:
+    """ Block of Text """
+
+    def __init__( self, text, xyLocPx, xySizPx, padding ):
+        """ Set necessary parameters """
+        self.text    = f"{text}"
+        self.xyLocPx = xyLocPx
+        self.xySizPx = xySizPx
+        self.pad_px  = padding
+
+    def get_text_start_abs( self ):
+        """ Get the absolute location of the text start """
+        return (self.xyLocPx[0]+self.pad_px, self.xyLocPx[1]+self.pad_px,)
+    
+    def get_max_line_length_px( self ):
+        """ How long is a line of text allowed to be? """
+        return self.xySizPx[0]-2*self.pad_px
 
 
 
