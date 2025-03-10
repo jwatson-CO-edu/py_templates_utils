@@ -40,19 +40,33 @@ class Box:
                 if i < (N-1):
                     nuLst.append( hPadPx )
             lenList = nuLst[:]
-        tot = sum( lenList )
-        lst = np.array( lenList ) / tot * self.xySizPx[0]
+        tot = sum( [elem for elem in lenList if (elem > 0)] )
+        neg = sum( [elem for elem in lenList if (elem < 0)] )
+
+        # Handle "Horizontal Fill" behavior
+        if neg < 0:
+            if tot < self.xySizPx[0]:
+                var = (self.xySizPx[0] - tot) / abs( neg )
+                lenList = [(elem if (elem > 0) else var) for elem in lenList]
+            else:
+                lenList = [(elem if (elem > 0) else 0.0) for elem in lenList]
+        if self.xySizPx[0] != sum( lenList ):
+            lst = np.array( lenList ) / tot * self.xySizPx[0]
+        else:
+            lst = lenList[:]
+            
         if hPadPx > 0.0:
             padLen = lst[1]
         bxs = list()
         bgn = self.xyLocPx[:]
         for len_i in lst:
-            if hPadPx > 0.0:
-                if len_i > padLen:
+            if len_i > 0.0:
+                if hPadPx > 0.0:
+                    if len_i > padLen:
+                        bxs.append(  Box( bgn[:], (len_i, self.xySizPx[1],) )  )
+                else:
                     bxs.append(  Box( bgn[:], (len_i, self.xySizPx[1],) )  )
-            else:
-                bxs.append(  Box( bgn[:], (len_i, self.xySizPx[1],) )  )
-            bgn[0] += len_i
+                bgn[0] += len_i
         return bxs
 
 
@@ -66,6 +80,10 @@ class TextBox:
         self.xyLocPx = xyLocPx
         self.xySizPx = xySizPx
         self.pad_px  = padding
+        self.textLoc = (self.pad_px, self.pad_px,)
+        self.styles  = dict()
+        self.brdrRad = 40
+
 
     @staticmethod
     def from_Boxes( boxLst, padding ):
@@ -75,13 +93,16 @@ class TextBox:
             rtnBxs.append( TextBox( "", box.xyLocPx[:], box.xySizPx[:], padding ) )
         return rtnBxs
 
+
     def get_text_start_abs( self ):
         """ Get the absolute location of the text start """
-        return (self.xyLocPx[0]+self.pad_px, self.xyLocPx[1]+self.pad_px,)
-    
+        return (self.xyLocPx[0]+self.textLoc[0], self.xyLocPx[1]+self.textLoc[1],)
+
+
     def get_max_line_length_px( self ):
         """ How long is a line of text allowed to be? """
         return self.xySizPx[0]-2*self.pad_px
+
 
 
 
@@ -166,6 +187,12 @@ class ResumeFactory:
             self.dSVG.rect( insert = xyLocPx, size = xySizPx, rx = radius, ry = radius, class_ = style ), 
             layerName 
         )
+
+
+    def add_TextBox( self, tb : TextBox, layerName = None ):
+        """ Add a textbox to the resume """
+        self.add_styled_rectangle( tb.xyLocPx, tb.xySizPx, tb.styles['border'], tb.brdrRad, layerName )
+        self.add_styled_text( tb.text, tb.styles['text'], tb.get_text_start_abs(), layerName )
 
 
     def test01( self ):
