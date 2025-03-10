@@ -47,19 +47,19 @@ class Box:
         if neg < 0:
             if tot < self.xySizPx[0]:
                 var = (self.xySizPx[0] - tot) / abs( neg )
-                lenList = [(elem if (elem > 0) else var) for elem in lenList]
             else:
-                lenList = [(elem if (elem > 0) else 0.0) for elem in lenList]
+                var = 0.0
+            lenList = [(elem if (elem > 0) else var) for elem in lenList]
         if self.xySizPx[0] != sum( lenList ):
-            lst = np.array( lenList ) / tot * self.xySizPx[0]
+            lenList = np.array( lenList ) / tot * self.xySizPx[0]
         else:
-            lst = lenList[:]
-            
+            lenList = lenList[:]
+
         if hPadPx > 0.0:
-            padLen = lst[1]
+            padLen = lenList[1]
         bxs = list()
         bgn = self.xyLocPx[:]
-        for len_i in lst:
+        for len_i in lenList:
             if len_i > 0.0:
                 if hPadPx > 0.0:
                     if len_i > padLen:
