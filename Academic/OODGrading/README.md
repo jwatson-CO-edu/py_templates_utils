@@ -100,6 +100,7 @@ on each line.
    - `{?}` Automatically send failed test report here?
 
 # Change Log
+* 2025-03-21: Added MacOS (Darwin) config data, IntelliJ path is now set as the first valid of a list of given options, Gradle tests work on some machines and not others! - Reason unknown!, Source files with a search term in their title will have the first `_SRCH_MARGN` lines of the file added to the summary, Corrected zero-based line numbers in summary, Timeout on summary generation
 * 2025-03-07: Order branches by most recent commit date rather than creation date, Report code block sizes, Functions are more tolerant to project structures that are both deeply nested **and** with directory names that are other than what was given by proctors
 * 2025-02-27: A summarized JAVA file is created for each student based on the specified search terms. Config JSON has been split into categories, including OS-specific fields. Small editorial and QOL adjustments. 
 * 2025-02-25: Config JSON so that users do not need to modify code every assignment.
