@@ -1,2 +1,2 @@
 from random import randrange
-print( [randrange(1,9) for _ in range(2)] )
+print( f"{[randrange(1,9) for _ in range(2)]} / {[randrange(1,7) for _ in range(2)]}" )
