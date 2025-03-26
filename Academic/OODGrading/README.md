@@ -17,6 +17,18 @@ This is to assist course staff in grading many student Java assignments in one s
 1. `sudo mv pmd-bin-7.10.0 /opt/`
 1. Add to "~/.bashrc": `alias pmd="/opt/pmd-bin-7.10.0/bin/pmd"`
 
+### IntelliJ IDEA, Editor
+1. Download the TAR
+1. Expand and rename directory to "idea"
+1. `sudo mv idea /opt/`
+1. Add to "~/.bashrc": `alias idea="/opt/idea/bin/idea"`
+
+### Gradle, Build System
+1. `sudo apt install openjdk-21-jdk`
+1. `curl -s "https://get.sdkman.io" | bash`
+1. `source "$HOME/.sdkman/bin/sdkman-init.sh"`
+1. `sdk install gradle 8.13`
+
 # Grading Script Usage Instructions (per Assignment)
 1. Copy "[00_clone_test_build_all.py](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/00_clone_test_build_all.py)", "[OOD_Java-Rules.xml](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/OOD_Java-Rules.xml)", and "[HW_Config.json](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/HW_Config.json)" to the root directory for this assignment.
 1. At the assignment page, click "**Download Submissions**".
@@ -88,6 +100,7 @@ on each line.
    - `{?}` Automatically send failed test report here?
 
 # Change Log
+* 2025-03-21: Added MacOS (Darwin) config data, IntelliJ path is now set as the first valid of a list of given options, Gradle tests work on some machines and not others! - Reason unknown!, Source files with a search term in their title will have the first `_SRCH_MARGN` lines of the file added to the summary, Corrected zero-based line numbers in summary, Timeout on summary generation
 * 2025-03-07: Order branches by most recent commit date rather than creation date, Report code block sizes, Functions are more tolerant to project structures that are both deeply nested **and** with directory names that are other than what was given by proctors
 * 2025-02-27: A summarized JAVA file is created for each student based on the specified search terms. Config JSON has been split into categories, including OS-specific fields. Small editorial and QOL adjustments. 
 * 2025-02-25: Config JSON so that users do not need to modify code every assignment.

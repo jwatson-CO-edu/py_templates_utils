@@ -2,7 +2,7 @@
 
 ##### Imports #####
 ### Standard ###
-import subprocess, os, sys, platform, json
+import subprocess, os, sys, platform, json, traceback
 from pprint import pprint
 from collections import deque
 from pprint import pprint
@@ -12,21 +12,33 @@ from time import sleep
 ##### Constants #####
 _CONFIG_PATH = 'HW_Config.json'
 
+
+##### Config Helpers #####
+
+def path_exists_fallback( pathList : list[str] ) -> str:
+    """ Return the first path in the list that exists, Otherwise return `None` """
+    for path in pathList:
+        if os.path.isdir( os.path.dirname( path ) ):
+            return path
+    return None
+
+
 # Get all OS information in one tuple
 platform_info = platform.uname()
-print(f"Platform Information:")
+print( f"Platform Information:" )
 pprint( platform_info )
 print
 _USER_SYSTEM = platform_info.system
 
 config = None
-with open(_CONFIG_PATH, 'r') as f:
+with open( _CONFIG_PATH, 'r' ) as f:
     config = json.load(f)
 
 try:
     ### Platform ###
-    _INTELLIJ_PATH  = config[_USER_SYSTEM]["_INTELLIJ_PATH"]
+    _INTELLIJ_PATH  = path_exists_fallback( config[_USER_SYSTEM]["_INTELLIJ_PATH"] )
     _PMD_PATH       = config[_USER_SYSTEM]["_PMD_PATH"]
+    _GRADLE_PATH    = config[_USER_SYSTEM]["_GRADLE_PATH"]
     _EDITOR_COMMAND = config[_USER_SYSTEM]["_EDITOR_COMMAND"]
     ### Settings ###
     _PMD_JAVA_RULES = config["Settings"]["_PMD_JAVA_RULES"]
@@ -36,13 +48,14 @@ try:
     _RUN_TESTS      = config["Settings"]["_RUN_TESTS"]
     _NUM_TESTS      = config["Settings"]["_NUM_TESTS"]
     _N_BIG_BLK      = config["Settings"]["_N_BIG_BLK"]
+    _INSPECT_J      = (config["Settings"]["_INSPECT_J"] and (_INTELLIJ_PATH is not None))
+    _SRCH_MARGN     = config["Settings"]["_SRCH_MARGN"]
+    _OPEN_SNPPT     = config["Settings"]["_OPEN_SNPPT"]
     ### Assignment ###
     _LIST_PATHS = config["HWX"]["_LIST_PATHS"]
     _SOURCE_DIR = config["HWX"]["_SOURCE_DIR"]
     _BRANCH_STR = config["HWX"]["_BRANCH_STR"]
     _TOPIC_SRCH = config["HWX"]["_TOPIC_SRCH"]
-    _SRCH_MARGN = config["HWX"]["_SRCH_MARGN"]
-    _OPEN_SNPPT = config["HWX"]["_OPEN_SNPPT"]
 except KeyError as err:
     print( f"\n\033[91mFAILED to load config file!, {err}\033[0m\n" )
 
@@ -118,14 +131,18 @@ def run_cmd( ruleStr : str, timeout_s : int = 0, suppressErr : bool = False ) ->
     # NOTE: If the client code requests a timeout, then there will be less feedback!
 
     if timeout_s:
-        out = subprocess.check_output( ruleStr, 
-                                       stdout  = subprocess.PIPE, 
-                                       stderr  = subprocess.STDOUT,
-                                       shell   = True,
-                                       timeout = int( timeout_s ) )
+        try:
+            out = subprocess.check_output( ruleStr, 
+                                        #    stdout  = subprocess.PIPE, 
+                                            stderr  = subprocess.STDOUT,
+                                            shell   = True,
+                                            timeout = int( timeout_s ) )
+        except subprocess.TimeoutExpired as e:
+            out = ""
+            print( f"Time limit of {int( timeout_s )} seconds EXPIRED for process\n{ruleStr}\n{e}\n" )
         return { 
             'cmd': ruleStr,
-            'err': "",
+            'err': traceback.format_exc(),
             'out': out.decode(),
         }
     else:
@@ -153,11 +170,11 @@ def gradle_test( dirPrefix : str = "" ):
     """ Run all Gradle tests """
     # if len( dirPrefix ):
     #     dirPrefix = f"./{dirPrefix}"
-    res = run_cmd( f"rm -rf {dirPrefix}/.idea" )
-    res = run_cmd( f"gradle clean -p {dirPrefix}", suppressErr = True )
-    res = run_cmd( f"gradle build -p {dirPrefix} -cp src", suppressErr = True )
-    cmd = f"gradle test --no-build-cache -d -p {dirPrefix}"
-    # cmd = f"gradle cleanTest test --no-build-cache -d -p {dirPrefix}"
+    # res = run_cmd( f"rm -rf {dirPrefix}/.idea" )
+    res = run_cmd( f"{_GRADLE_PATH} clean -p {dirPrefix}", suppressErr = True )
+    res = run_cmd( f"{_GRADLE_PATH} build -p {dirPrefix} -cp src", suppressErr = True )
+    # cmd = f"{_GRADLE_PATH} test --no-build-cache -d -p {dirPrefix}"
+    cmd = f"{_GRADLE_PATH} cleanTest test --no-build-cache -d -p {dirPrefix}"
     # cmd = f"gradle cleanTest test --scan --no-build-cache -d -p {dirPrefix}" # WAY TOO LONG
     res = run_cmd( cmd, suppressErr = True )
     if len( res['err'] ):
@@ -615,8 +632,24 @@ def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], search
                             found = True
                             kWord = term
                             break
-                    rtnStr += f"/*{range_j[0]+k: 4}*/\t{line_k}{f' // << kw: {kWord} <<' if found else ''}\n"
+                    rtnStr += f"/*{range_j[0]+k+1: 4}*/\t{line_k}{f' // << kw: {kWord} <<' if found else ''}\n"
                 rtnStr += f"\n"
+            if not len( res_i['chunks'] ):
+                found = False
+                kWord = ""
+                for term in searchTerms:
+                    if term.lower() in f"{path}".lower():
+                        found = True
+                        kWord = term
+                        break
+                if found:
+                    lines, _ = split_lines_with_depth_change( src_i )
+                    rtnStr += f' // vvvvv-- kw: {kWord} in "{str( path ).split("/")[-1]}"! --vvvvv\n'
+                    for k in range( min( _SRCH_MARGN, len( lines ) ) ):
+                        line_k = lines[k]
+                        rtnStr += f"/*{k+1: 4}*/\t{line_k}\n"
+
+
         rtnStr += f"\n\n"
     return rtnStr
 
@@ -765,7 +798,7 @@ if __name__ == "__main__":
             with open( stdSnp, 'w' ) as f:
                 f.write( sdtSrc )
             if _OPEN_SNPPT:
-                run_cmd( f"{_EDITOR_COMMAND} {stdSnp}" )
+                run_cmd( f"{_EDITOR_COMMAND} {stdSnp}", timeout_s = 3 )
 
             ### Static Analysis ###
             print( f"About to run code style checks ..." )
@@ -779,9 +812,10 @@ if __name__ == "__main__":
             disp_text_header( f"{stdNam} Verbosity Check COMPLETE", 3, preNL = 0, postNL = 1 )
 
             ### IntelliJ View ###
-            print( f"About to inspect Java project ..." )
-            inspect_project( dirPrefix = stdDir )
-            print()
+            if _INSPECT_J:
+                print( f"About to inspect Java project ..." )
+                inspect_project( dirPrefix = stdDir )
+                print()
 
             disp_text_header( f"{stdNam}, Eval completed!", 5, preNL = 1, postNL = 2 )
 
