@@ -23,14 +23,13 @@
         "_NUM_TESTS"     : 1,
         "_N_BIG_BLK"     : 25,
         "_INSPECT_J"     : true,
-        "_SRCH_MARGN"    : 40,
+        "_SRCH_MARGN"    : 60,
         "_OPEN_SNPPT"    : true
     },
     "HWX": {
         "_LIST_PATHS": ["ugrads.txt","grads.txt"],
         "_SOURCE_DIR": "src/main/java/csci/ooad",
-        "_BRANCH_STR": "6",
-        "_TOPIC_SRCH": ["observer", "observor", "adaptor", "adapter", "facade", "singleton", "IMazeObservers", "AudibleObserver", 
-                        "broadcast", "TestObserver", "IMazeSubject"]
+        "_BRANCH_STR": "7",
+        "_TOPIC_SRCH": ["armor", "armour", "artifact", "artefact", "fighter", "cloak", "invisible", "potion", "resurrect", "decorat"]
     }
 }

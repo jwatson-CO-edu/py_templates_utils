@@ -27,7 +27,7 @@ def path_exists_fallback( pathList : list[str] ) -> str:
 platform_info = platform.uname()
 print( f"Platform Information:" )
 pprint( platform_info )
-print
+print()
 _USER_SYSTEM = platform_info.system
 
 config = None
@@ -88,7 +88,6 @@ def get_ordered_students( listPath ):
         for line in lines:
             if len( line ) > 2:
                 students.append( line.replace('-','').replace("'",'').replace(",",'').strip().lower().split() )
-    # students.sort( key = lambda x: x[-1] )
     students.sort( key = lambda x: x[0] )
     return students
 
@@ -133,10 +132,9 @@ def run_cmd( ruleStr : str, timeout_s : int = 0, suppressErr : bool = False ) ->
     if timeout_s:
         try:
             out = subprocess.check_output( ruleStr, 
-                                        #    stdout  = subprocess.PIPE, 
-                                            stderr  = subprocess.STDOUT,
-                                            shell   = True,
-                                            timeout = int( timeout_s ) )
+                                           stderr  = subprocess.STDOUT,
+                                           shell   = True,
+                                           timeout = int( timeout_s ) )
         except subprocess.TimeoutExpired as e:
             out = ""
             print( f"Time limit of {int( timeout_s )} seconds EXPIRED for process\n{ruleStr}\n{e}\n" )
@@ -168,14 +166,9 @@ def run_cmd( ruleStr : str, timeout_s : int = 0, suppressErr : bool = False ) ->
 
 def gradle_test( dirPrefix : str = "" ):
     """ Run all Gradle tests """
-    # if len( dirPrefix ):
-    #     dirPrefix = f"./{dirPrefix}"
-    # res = run_cmd( f"rm -rf {dirPrefix}/.idea" )
     res = run_cmd( f"{_GRADLE_PATH} clean -p {dirPrefix}", suppressErr = True )
     res = run_cmd( f"{_GRADLE_PATH} build -p {dirPrefix} -cp src", suppressErr = True )
-    # cmd = f"{_GRADLE_PATH} test --no-build-cache -d -p {dirPrefix}"
     cmd = f"{_GRADLE_PATH} cleanTest test --no-build-cache -d -p {dirPrefix}"
-    # cmd = f"gradle cleanTest test --scan --no-build-cache -d -p {dirPrefix}" # WAY TOO LONG
     res = run_cmd( cmd, suppressErr = True )
     if len( res['err'] ):
         print( f"ERROR:\n{res['err']}" )
@@ -226,11 +219,7 @@ def prep_build_spec( dirPrefix : str = "", buildFile : str = "build.gradle" ):
         chunk = f"\nsourceSets.main.java.srcDirs = ['{srcDir}']\n"
         chunk += "\njar {" + '\n'
         chunk += "    manifest {" + '\n'
-
-        # chunk += f"       attributes 'Main-Class': '{mainPath.replace('/','.')}.{mainClass}'" + '\n'
-        # chunk += f"       attributes 'Main-Class': '{mainClass}'" + '\n'
         chunk += f"       attributes 'Main-Class': '{srcDir.split('/')[-1]}.{mainClass}'" + '\n'
-        
         chunk += "    }" + '\n'
         chunk += "    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }" + '\n'
         chunk += "}" + '\n'
@@ -400,7 +389,6 @@ def levenshtein_search_dist( s1 : str, s2 : str ) -> int:
                 distances_.append(distances[i1])
             else:
                 distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
-    # return distances_.pop()
     return distances_.pop() + abs(len(s1)-len(s2)) # HACK
 
 
@@ -597,33 +585,28 @@ def run_menu( students ):
 def get_all_file_paths( directory ):
     # Source: https://www.google.com/search?client=firefox-b-1-lm&channel=entpr&q=python+list+of+paths+from+recursive+walk
     file_paths = []
-    # print( directory )
     for dirpath, _, filenames in os.walk( directory ):
-        # print( dirpath )
         for filename in filenames:
             file_path = os.path.join( dirpath, filename )
             file_paths.append( file_path )
-    # print( file_paths )
     return file_paths
 
 
 def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], searchOver : int = 40, fileExt : str = "java" ):
     """ Get identified chunks in the code """
     rtnStr  = ""
-    # jvPaths = [path for path in os.listdir( srcDir ) if f".{fileExt}".lower() in path.lower()]
     jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
     while not len( jvPaths ):
         srcDir  = os.path.dirname( srcDir )
         jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
     for path in jvPaths:
         rtnStr += f"///// {path} /////\n"
-        # with open( os.path.join( srcDir, path ), 'r' ) as f_i:
         with open( path, 'r' ) as f_i:
             src_i = f"{f_i.read()}"
             res_i = grab_identified_sections_of_java_source( src_i, searchTerms, searchOver )
             for j, chunk_j in enumerate( res_i['chunks'] ):
                 range_j = res_i['ranges'][j]
-                rtnStr += f"/// Lines: {range_j} ///\n"
+                rtnStr += f"/// Lines: [{range_j[0]+1}, {range_j[1]}] ///\n"
                 for k, line_k in enumerate( chunk_j ):
                     found = False
                     kWord = ""
@@ -662,7 +645,6 @@ def count_block_lines( srcDir : str, searchOver : int = 3, fileExt : str = "java
         srcDir  = os.path.dirname( srcDir )
         jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
     for path in jvPaths:
-        # with open( os.path.join( srcDir, path ), 'r' ) as f_i:
         with open( path, 'r' ) as f_i:
             src_i = f"{f_i.read()}"
             lns_i, dpt_i = split_lines_with_depth_change( src_i )
@@ -675,7 +657,6 @@ def count_block_lines( srcDir : str, searchOver : int = 3, fileExt : str = "java
                     stk_i.append({
                         'path'  : f"{path}".split('/')[-1],
                         'begin' : j+1,
-                        # 'lines' : deque( lns_i[ bgn_i : j ] ),
                         'lines' : deque(),
                     })
                 # All existing stack elems accrue the line
@@ -698,8 +679,6 @@ def report_block_sizes( srcDir : str, searchOver : int = 3, fileExt : str = "jav
         path = block['path']
         size = len( block['lines'] )
         print( f"{path: <{wdtPath}} : {size: >{wdtSize}} : On Line {block['begin']: >{wdtSize}}" )
-        # for i in range( searchOver+1 ):
-        #     print( f"\t{block['lines'][i]}" )
 
 
 
