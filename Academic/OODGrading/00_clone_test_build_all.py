@@ -51,9 +51,11 @@ try:
     _INSPECT_J      = (config["Settings"]["_INSPECT_J"] and (_INTELLIJ_PATH is not None))
     _SRCH_MARGN     = config["Settings"]["_SRCH_MARGN"]
     _OPEN_SNPPT     = config["Settings"]["_OPEN_SNPPT"]
+    _EN_ALL_TST     = config["Settings"]["_EN_ALL_TST"]
     ### Assignment ###
     _LIST_PATHS = config["HWX"]["_LIST_PATHS"]
     _SOURCE_DIR = config["HWX"]["_SOURCE_DIR"]
+    _TEST_DIR   = config["HWX"]["_TEST_DIR"] 
     _BRANCH_STR = config["HWX"]["_BRANCH_STR"]
     _TOPIC_SRCH = config["HWX"]["_TOPIC_SRCH"]
 except KeyError as err:
@@ -681,6 +683,30 @@ def report_block_sizes( srcDir : str, searchOver : int = 3, fileExt : str = "jav
         print( f"{path: <{wdtPath}} : {size: >{wdtSize}} : On Line {block['begin']: >{wdtSize}}" )
 
 
+def enable_all_tests( tstDir : str, fileExt : str = "java" ):
+    """ Find all `@Disable`d tests and comment out the decorator """
+    jvPaths = [path for path in get_all_file_paths( tstDir ) if f".{fileExt}".lower() in str(path).lower()]
+    print( f"\nFound {len(jvPaths)} files in {tstDir}!" )
+    enTests = 0
+    for jPath in jvPaths:
+        wLines_i = deque()
+        rewrit_i = False
+        with open( jPath, 'r' ) as f_i:
+            lines_i = f_i.readlines()
+            for line_j in lines_i:
+                if "@Disabled" in line_j:
+                    wLines_i.append( f"//{line_j}" )
+                    rewrit_i = True
+                    enTests += 1
+                else:
+                    wLines_i.append( f"{line_j}" )
+        if rewrit_i:
+            with open( jPath, 'w' ) as f_i:
+                for line_j in wLines_i:
+                    f_i.write( f"{line_j}" )
+    print( f"\nEnabled {enTests} tests!\n" )
+
+
 
 ########## MAIN ####################################################################################
 
@@ -792,6 +818,10 @@ if __name__ == "__main__":
 
             ### IntelliJ View ###
             if _INSPECT_J:
+                ## Enable Tests for Coverage ##
+                if _EN_ALL_TST:
+                    enable_all_tests( os.path.join( stdDir, _TEST_DIR), fileExt = "java" )
+
                 print( f"About to inspect Java project ..." )
                 inspect_project( dirPrefix = stdDir )
                 print()
