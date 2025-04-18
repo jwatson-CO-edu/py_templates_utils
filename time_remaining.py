@@ -25,7 +25,7 @@ def countdown( t ):
             exit()
 
     print("Time's up!!")
-    duration =  10  # seconds
+    duration =   5  # seconds
     freq     = 550 #440  # Hz
     os.system( 'play -nq -t alsa synth {} sine {}'.format(duration, freq) )
 
