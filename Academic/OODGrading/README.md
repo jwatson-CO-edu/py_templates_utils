@@ -88,19 +88,10 @@ on each line.
         - Type [q] then [Enter] to quit the program immediately. (*NOTE*: Next run, execution will start from the beginning of the alphabet. There is no saved state.)
 
 # `DEV_PLAN`
-* `[Y]` Add student search, 2025-02-21: Added, TESTED!
-  - `[Y]` 2025-02-21, ISSUE: <Lastname, Firstname> search seems to FAIL, display full ranking for the list and DEBUG, 2025-02-21: Resolved, compared wrong names
-* `[Y]` Config JSON so that users do not need to modify code every assignment, 2025-02-25: Added and TESTED!
-   - `{?}` IF someone generates a pull req. for Windows functionality, THEN add Windows fields to the JSON.
-* `[Y]` Automatically export failing test results to a file, 2025-02-21: Added, TESTED!
-* `[Y]` Automatically export failing build results to a file, 2025-02-27: Added, TESTED!
-* `{?}` Allow users to add/commit files to the repo? YAGNI?
-   - `[ ]` Create "Eval" dir
-   - `[ ]` Scrape for screenshots since beginning of per-student eval
-   - `{?}` Automatically send style report here?
-   - `{?}` Automatically send failed test report here?
+No pull requests are considered after 2025-05-10!
 
 # Change Log
+* 2025-04-24: Display relative student contributions (by GitHub login), Fixed bug where including a URL argument in scraped address causes an infinite loop, QoL improvements, Editorial Changes
 * 2025-03-21: Added MacOS (Darwin) config data, IntelliJ path is now set as the first valid of a list of given options, Gradle tests work on some machines and not others! - Reason unknown!, Source files with a search term in their title will have the first `_SRCH_MARGN` lines of the file added to the summary, Corrected zero-based line numbers in summary, Timeout on summary generation
 * 2025-03-07: Order branches by most recent commit date rather than creation date, Report code block sizes, Functions are more tolerant to project structures that are both deeply nested **and** with directory names that are other than what was given by proctors
 * 2025-02-27: A summarized JAVA file is created for each student based on the specified search terms. Config JSON has been split into categories, including OS-specific fields. Small editorial and QOL adjustments. 
@@ -108,6 +99,7 @@ on each line.
 * 2025-02-21: Fixed issue with multiple matching branches that causes the _earliest_ of matches to be checked out instead of the **latest**, Fixed problems with name search.
 
 # Windows Contribution Guide
+**WARNING**: Links lead to a previous commit!
 * [Spawning subprocesses from the shell will be different.](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L80)
 * [Changing terminal output color might be different? (Citation needed)](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L17)
 * [Install paths will be different.](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L9)
