@@ -59,6 +59,7 @@ try:
     _TEST_DIR   = config["HWX"]["_TEST_DIR"] 
     _BRANCH_STR = config["HWX"]["_BRANCH_STR"]
     _TOPIC_SRCH = config["HWX"]["_TOPIC_SRCH"]
+    _TOPIC_XCLD = config["HWX"]["_TOPIC_XCLD"]
 except KeyError as err:
     print( f"\n\033[91mFAILED to load config file!, {err}\033[0m\n" )
 
@@ -291,7 +292,7 @@ def scrape_repo_address( htPath ):
                 if ("github.com" in part) and (' ' not in part):
                     parts_i = part.split('?')
                     part_i  = parts_i[0]
-                    rtnStr  = part_i.replace( "https://github.com/", "git@github.com:" ).split( "/tree" )[0].split( "/pull" )[0].split( "#" )[0]
+                    rtnStr  = part_i.replace( "https://github.com/", "git@github.com:" ).split( "/tree" )[0].split( "/pull" )[0].split( "#" )[0].split( "/blob" )[0]
                     print( f"Found URL: {rtnStr}" )
                     return rtnStr
     return None
@@ -305,10 +306,8 @@ def get_folder_from_github_addr( gitAddr ):
 
 def get_most_recent_branch( dirPrefix : str = "", reqStr = None ):
     """ Extract the branch that was most recently created """
-    # cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ ls-remote --heads --sort=-authordate origin"
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ ls-remote --heads --sort=-committerdate origin"
     out = run_cmd( cmd )['out']
-    # print( f"{out}" )
     rtn = ""
     if reqStr is not None:
         req = f"{reqStr}"
@@ -449,12 +448,14 @@ def split_lines_with_depth_change( nptStr : str ):
     return list( rtnLines ), list( linDepth )
 
 
-def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : list[str], searchOver : int = 40 ):
+def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : list[str], searchOver : int = 40,
+                                             excludeTerms : list[str] = None ):
     """ Attempt to grab relevant portion of code """
     lines, lnDeltaDepth = split_lines_with_depth_change( javaSourceStr )
     N = len( lines )
     depth    = 0
     covered  = set([])
+    exclude  = excludeTerms if (excludeTerms is not None) else list()
     rtnLines = {
         "chunks" : list(),
         "ranges" : list(),
@@ -468,6 +469,11 @@ def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : 
             if sTerm in line_i:
                 hit = True
                 break
+        if hit:
+            for xTerm in exclude:
+                if xTerm in line_i:
+                    hit = False
+                    break
         if hit:
             blockDex = i
             ovrDpth  = 0
@@ -623,10 +629,12 @@ def get_all_file_paths( directory ):
     return file_paths
 
 
-def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], searchOver : int = 40, fileExt : str = "java" ):
+def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], searchOver : int = 40, fileExt : str = "java",
+                                   excludeTerms : list[str] = None ):
     """ Get identified chunks in the code """
-    rtnStr  = ""
-    jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
+    rtnStr   = ""
+    jvPaths  = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
+    exclude  = excludeTerms if (excludeTerms is not None) else list()
     while not len( jvPaths ):
         srcDir  = os.path.dirname( srcDir )
         jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
@@ -634,7 +642,7 @@ def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], search
         rtnStr += f"///// {path} /////\n"
         with open( path, 'r' ) as f_i:
             src_i = f"{f_i.read()}"
-            res_i = grab_identified_sections_of_java_source( src_i, searchTerms, searchOver )
+            res_i = grab_identified_sections_of_java_source( src_i, searchTerms, searchOver, excludeTerms )
             for j, chunk_j in enumerate( res_i['chunks'] ):
                 range_j = res_i['ranges'][j]
                 rtnStr += f"/// Lines: [{range_j[0]+1}, {range_j[1]}] ///\n"
@@ -646,6 +654,11 @@ def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], search
                             found = True
                             kWord = term
                             break
+                    if found:
+                        for term in exclude:
+                            if term.lower() in f"{line_k}".lower():
+                                found = False
+                                break
                     rtnStr += f"/*{range_j[0]+k+1: 4}*/\t{line_k}{f' // << kw: {kWord} <<' if found else ''}\n"
                 rtnStr += f"\n"
             if not len( res_i['chunks'] ):
@@ -829,7 +842,10 @@ if __name__ == "__main__":
 
             ### Gather Snippets ###
             print( f"About to fetch relevant code ..." )
-            sdtSrc = grab_identified_source_chunks( os.path.join( stdDir, _SOURCE_DIR ), _TOPIC_SRCH, _SRCH_MARGN, "java" )
+            print( f"Include: {_TOPIC_SRCH}" )
+            print( f"Exclude: {_TOPIC_XCLD}" )
+            sdtSrc = grab_identified_source_chunks( os.path.join( stdDir, _SOURCE_DIR ), _TOPIC_SRCH, _SRCH_MARGN, "java", 
+                                                    _TOPIC_XCLD )
             stdSnp = f"{_REPORT_DIR}/{stdStr}_related_source.java"
             with open( stdSnp, 'w' ) as f:
                 f.write( sdtSrc )
@@ -849,7 +865,7 @@ if __name__ == "__main__":
 
             ### Show LOC Contributions by Student ###
             if _SHO_CONTRB:
-                disp_text_header( f"Per-user contributions for repo from {stdNam}", 3, preNL = 1, postNL = 1 )
+                disp_text_header( f"Per-user contributions for repo from {stdNam}", 3, preNL = 1, postNL = 0 )
                 contrib = count_LOC_contributions( dirPrefix = stdDir, deleteFactor = 0.125 )
                 names   = list( contrib.keys() )
                 names.sort()

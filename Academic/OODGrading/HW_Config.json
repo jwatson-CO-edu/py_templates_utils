@@ -33,7 +33,9 @@
         "_SOURCE_DIR": "src/main/java/csci/ooad",
         "_TEST_DIR"  : "src/test/java/csci/ooad",
         "_BRANCH_STR": "9",
-        "_TOPIC_SRCH": ["adapter", "pause", "service", "input", "api", "command", "json", "springboot",
-                        "request", "response"]
+        "_TOPIC_SRCH": ["turn", "adapter", "adaptor", "pause", "input", "command", "model", "view", "control", 
+                        "service", "server", "endpoint", "api", "json", "springboot", "request", "response",
+                        "/api/games", "/api/game/{gameId}", "/api/game/create", "/api/game/{gameId}/playTurn/{command}"],
+        "_TOPIC_XCLD": ["return", "observer"]
     }
 }
