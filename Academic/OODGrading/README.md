@@ -73,6 +73,7 @@ on each line.
     * Gathers snippets of Java code into an annotated JAVA file that is named after the student. This will appear in the "output" subdirectory. (See above.)
     * Runs code style checks via [PMD Static Analysis](https://pmd.github.io/pmd/index.html). A report named after the student will appear in a new "output" subdirectory.
     * Determines the size of all code blocks within JAVA files, and prints the size of the `_N_BIG_BLK` largest blocks, with filename and line number.
+    * Displays relative per-user contributions to the repo in Lines of Code (LOC) are displayed as a fraction of all lines committed. (Use your judgement when you see a relative contribution of 1:0.)
     * Opens IntelliJ IDEA with a view on the student project. You can re-run tests, inspect code, and generate class diagrams from here.
     * **You must close the IntelliJ window to finish the student evaluation!**
     * At the end of each student evaluation, you are given a prompt:
