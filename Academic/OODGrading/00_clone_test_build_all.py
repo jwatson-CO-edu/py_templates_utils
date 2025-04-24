@@ -52,6 +52,7 @@ try:
     _SRCH_MARGN     = config["Settings"]["_SRCH_MARGN"]
     _OPEN_SNPPT     = config["Settings"]["_OPEN_SNPPT"]
     _EN_ALL_TST     = config["Settings"]["_EN_ALL_TST"]
+    _SHO_CONTRB     = config["Settings"]["_SHO_CONTRB"]
     ### Assignment ###
     _LIST_PATHS = config["HWX"]["_LIST_PATHS"]
     _SOURCE_DIR = config["HWX"]["_SOURCE_DIR"]
@@ -290,7 +291,7 @@ def scrape_repo_address( htPath ):
                 if ("github.com" in part) and (' ' not in part):
                     parts_i = part.split('?')
                     part_i  = parts_i[0]
-                    rtnStr  = part_i.replace( "https://github.com/", "git@github.com:" ).split( "/tree" )[0].split( "/pull" )[0]
+                    rtnStr  = part_i.replace( "https://github.com/", "git@github.com:" ).split( "/tree" )[0].split( "/pull" )[0].split( "#" )[0]
                     print( f"Found URL: {rtnStr}" )
                     return rtnStr
     return None
@@ -330,7 +331,6 @@ def checkout_branch( dirPrefix : str = "", branchName : str = "" ):
     """ Check out the specified branch """
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ stash save"
     run_cmd( cmd )
-    # cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ checkout -t origin/{branchName}" 
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ checkout origin/{branchName}" 
     out = run_cmd( cmd )['out']
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ pull origin {branchName}" 
@@ -339,6 +339,37 @@ def checkout_branch( dirPrefix : str = "", branchName : str = "" ):
     out += run_cmd( cmd )['out']
     print( f"{out}" )
 
+
+def count_LOC_contributions( dirPrefix : str = "", deleteFactor = 0.125 ):
+    """ Get usernames and sum all LOC contributed by each user, Return as a dictionary """
+    cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ shortlog -sn --all" 
+    out = run_cmd( cmd )['out']
+    lns = f"{out}".split('\n')
+    nms = list()
+    for line in lns:
+        if len( line ) > 4:
+            nms.append( line.split()[-1] )
+    tot = 0.0
+    rtn = dict()
+    for gitName in nms:
+        rtn[ gitName ] = 0.0
+        cmd = f'git --no-pager --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ log --author="{gitName}" --format=tformat: --numstat'
+        out = run_cmd( cmd )['out']
+        lns = f"{out}".split('\n')
+        for line in lns:
+            parts   = line.split()
+            if len( parts ) < 2:
+                continue
+            try:
+                contrib = int(parts[0])*1.0 + int(parts[1])*deleteFactor
+                tot    += contrib
+                rtn[ gitName ] += contrib
+            except ValueError:
+                continue
+            
+    for k in rtn.keys():
+        rtn[k] /= tot
+    return rtn
 
 
 ########## STATIC ANALYSIS #########################################################################
@@ -477,8 +508,6 @@ def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : 
             rtnLines['ranges'].append( [bgn,end,] )
     return rtnLines
     
-
-
 
 
 ########## UTILITIES && FEATURES ###################################################################
@@ -708,6 +737,8 @@ def enable_all_tests( tstDir : str, fileExt : str = "java" ):
 
 
 
+
+
 ########## MAIN ####################################################################################
 
 
@@ -815,6 +846,18 @@ if __name__ == "__main__":
             disp_text_header( f"Class && Function Lengths for {stdNam}", 3, preNL = 1, postNL = 0 )
             report_block_sizes( os.path.join( stdDir, _SOURCE_DIR ), searchOver = 2 )
             disp_text_header( f"{stdNam} Verbosity Check COMPLETE", 3, preNL = 0, postNL = 1 )
+
+            ### Show LOC Contributions by Student ###
+            if _SHO_CONTRB:
+                disp_text_header( f"Per-user contributions for repo from {stdNam}", 3, preNL = 1, postNL = 1 )
+                contrib = count_LOC_contributions( dirPrefix = stdDir, deleteFactor = 0.125 )
+                names   = list( contrib.keys() )
+                names.sort()
+                nmMax = max( [len(name) for name in names] )
+                lnMax = max( [len(f"{loc:0.3f}") for loc in list(contrib.values())] )
+                for name in names:
+                    print( f"{name: <{nmMax}} : {round(contrib[name],3): >{lnMax}}" )
+                disp_text_header( f"{stdNam} Contributions COMPLETE", 3, preNL = 0, postNL = 1 )
 
             ### IntelliJ View ###
             if _INSPECT_J:
