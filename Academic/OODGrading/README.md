@@ -98,9 +98,8 @@ No pull requests are considered after 2025-05-10!
 * 2025-02-25: Config JSON so that users do not need to modify code every assignment.
 * 2025-02-21: Fixed issue with multiple matching branches that causes the _earliest_ of matches to be checked out instead of the **latest**, Fixed problems with name search.
 
-# Windows Contribution Guide
+# Windows Adaptation Guide
 **WARNING**: Links lead to a previous commit!
 * [Spawning subprocesses from the shell will be different.](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L80)
 * [Changing terminal output color might be different? (Citation needed)](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L17)
 * [Install paths will be different.](https://github.com/jwatson-CO-edu/py_templates_utils/blob/18278af12e72df5c156d58ed601f71e72a917459/Academic/OODGrading/00_clone_test_build_all.py#L9)
-* _I look forward to your pull requests!_
