@@ -49,7 +49,13 @@ def parse_expr_to_seconds( secExp ):
 
 
 # input time in seconds
-tExpr = input("Enter the time in seconds (HH:MM:SS or math allowed): ")
+tExpr = input( "Enter the time in seconds (HH:MM:SS or math allowed): " )
 
-# Compute seconds and begin countdown
-countdown( parse_expr_to_seconds( tExpr ) )
+if ',' in tExpr:
+    tExprs = [item.strip() for item in tExpr.split(',')]
+    for t_i in tExprs:
+        # Compute seconds and begin countdown
+        countdown( parse_expr_to_seconds( t_i ) )
+else:
+    # Compute seconds and begin countdown
+    countdown( parse_expr_to_seconds( tExpr ) )
