@@ -1,5 +1,18 @@
-import os, subprocess, shutil
+########## INIT ####################################################################################
+
+##### Imports #####
+### Standard ###
+import os, subprocess, shutil, json
+### Special ###
 import numpy as np
+### Local ###
+from utils import read_config_into_env, env_get
+
+##### Constants #####
+_CONFIG_PATH = 'HW_Config.json'
+
+
+########## HELPER FUNCTIONS ########################################################################
 
 
 def out_line( outFile, outStr ):
@@ -107,16 +120,7 @@ def make_in_dir_from_rule_with_output( hwDir, rule, f ):
     return runStudent
 
 
-def get_ordered_students( listPath ):
-    """ Prep student list for searching """
-    students = list()
-    with open( listPath, 'r' ) as f:
-        lines = f.readlines()
-        for line in lines:
-            if len( line ) > 2:
-                students.append( line.replace('-','').lower().split() )
-    students.sort( key = lambda x: x[1] )
-    return students
+
 
 
 def get_student_prefix( stdntLst, query ):
@@ -295,53 +299,73 @@ def attempt_normal_scan( fPath, fOut ):
     return nFound
 
 
-def get_stored_grading_state( fPath ):
-    """ Get the local stored state """
-    state = None
-    if os.path.isfile( fPath ):
-        with open( fPath, 'r' ) as f:
-            state = f.read().strip()
-    return state
 
 
-def store_grading_state( fPath, state ):
-    """ Set the local stored state """
-    with open( fPath, 'w' ) as f:
-        f.write( str( state ) )
+
+########## GRADER CLASS TO GRADE THE CLASS #########################################################
+
+class GraphicsInspector:
+    """ GRIN: CSCI 4/5229 Grading Utility """
+
+    ##### Init ############################################################
+
+    def get_stored_grading_state( self, fPath ):
+        """ Get the local stored state """
+        self.state = None
+        if os.path.isfile( fPath ):
+            with open( fPath, 'r' ) as f:
+                self.state = json.load( f )
+        return self.state
 
 
+    def store_grading_state( self, fPath ):
+        """ Set the local stored state """
+        with open( fPath, 'w' ) as f:
+            json.dump( self.state, f )
+
+
+    def get_ordered_students( self, listPath ):
+        """ Prep student list for searching """
+        self.students = list()
+        with open( listPath, 'r' ) as f:
+            lines = f.readlines()
+            for line in lines:
+                if len( line ) > 2:
+                    self.students.append( line.replace('-','').lower().split() )
+        self.students.sort( key = lambda x: x[1] )
+        return self.students
+
+
+    def __init__( self, configPath ):
+        """ Set up the inspector for a grading session """
+        read_config_into_env( configPath )
+        self.get_stored_grading_state( env_get("_STATE_PTH") )
+        self.subdirs = [ f.path for f in os.scandir() if f.is_dir() ]
+        self.subdirs.sort()
+        self.reports = list()
+        self.get_ordered_students( env_get("_LIST_PATH") )
+        self.N_stdnts = len( self.students )
+        os.makedirs( env_get("_BAD_DIR" ), exist_ok = True )
+        os.makedirs( env_get("_GOOD_DIR"), exist_ok = True )
+
+
+    ##### File Operations #################################################
+    # FIXME: MANAGE ALL THE ZIP SHIT
+
+
+    ##### Grading #########################################################
+
+    def run_grading_session( self ):
+        """ Find it, Compile it, Run it, Look at it! """
+        # FIXME, START HERE: MOVE ALL THE MAIN SHIT HERE
+        pass
+    
+
+
+########## MAIN ####################################################################################
 if __name__ == "__main__":
 
-    _LIST_PATH  = "MyStudents.txt"
-    _STATE_PTH  = "GradingState.txt"
-    _STATE_INT  = "AAAA"
-    _BAD_DIR    = '00_NOTIFY'
-    _GOOD_DIR   = '01_OK'
-    _ALWAYS_PIE = False 
-    _TXT_READER = 'xed'
-    _BAD_PATTRN = "glu"
 
-    state = get_stored_grading_state( _STATE_PTH )
-
-    _GOOD_NAME = "hw5"
-    ruleNames  = ['', 'hw5', 'hw05', 'HW5', 'HW05']
-
-    if state is None:
-        store_grading_state( _STATE_PTH, _STATE_INT )
-        state = _STATE_INT
-
-    
-    subdirs = [ f.path for f in os.scandir() if f.is_dir() ]
-    subdirs.sort()
-    reports = list()
-
-    students  = get_ordered_students( _LIST_PATH )
-    
-    N_stdnts  = len( students )
-
-    os.makedirs( _BAD_DIR , exist_ok = True )
-    os.makedirs( _GOOD_DIR, exist_ok = True )
-    
 
     for i, d in enumerate( subdirs ):
 
