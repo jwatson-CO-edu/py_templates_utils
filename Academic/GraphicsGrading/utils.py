@@ -46,7 +46,7 @@ def env_get( varName ):
     
 
 def env_sto( varName, varValu ):
-    """ Store value in env """
+    """ Store value in env as JSON """
     environ[ varName ] = json.dumps( varValu )
 
 
