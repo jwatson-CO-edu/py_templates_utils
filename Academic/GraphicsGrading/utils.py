@@ -3,7 +3,7 @@ from __future__ import annotations
 
 ##### Imports #############################################################
 ### Standard ###
-import time, json
+import time, json, os
 now = time.time
 from os import environ
 
@@ -71,3 +71,19 @@ def read_config_into_env( configJSONpath ):
         print( f"Cannot open file: {configJSONpath}" )
     print( f"The following environment variables are available: {rtnNam}" )
     return rtnNam
+
+
+
+########## FILE OPERATIONS #########################################################################
+
+def out_line( outFile, outStr ):
+    """ Print and write the output with a newline """
+    print( outStr )
+    outStr += '\n'
+    outFile.write( outStr )
+
+
+def p_executable( path ):
+    """ Return True if the file can be run """
+    # Author: ssam, https://ubuntuforums.org/showthread.php?t=1457094&s=d79fc51840d2783bb1461f9a049b7e03&p=9138623#post9138623
+    return bool( os.access(path, os.X_OK) )

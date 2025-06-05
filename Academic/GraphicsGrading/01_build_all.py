@@ -6,21 +6,13 @@ import os, subprocess, shutil, json
 ### Special ###
 import numpy as np
 ### Local ###
-from utils import read_config_into_env, env_get
+from utils import read_config_into_env, env_get, out_line
 
 ##### Constants #####
 _CONFIG_PATH = 'HW_Config.json'
 
 
 ########## HELPER FUNCTIONS ########################################################################
-
-
-def out_line( outFile, outStr ):
-    """ Print and write the output with a newline """
-    print( outStr )
-    outStr += '\n'
-    outFile.write( outStr )
-
 
 def dig_for_Makefile( drctry ):
     """ WHERE IS THE ASSIGNMENT CODE? """
@@ -120,31 +112,6 @@ def make_in_dir_from_rule_with_output( hwDir, rule, f ):
     return runStudent
 
 
-
-
-
-def get_student_prefix( stdntLst, query ):
-    """ Get a prefix that orders the folders """
-    for stdnt in stdntLst:
-        if (stdnt[0] in query) and (stdnt[1] in query):
-            return f"{stdnt[1]}_{stdnt[0]}_"
-    return None
-
-
-def get_student_name( stdntLst, query ):
-    """ Get a prefix that orders the folders """
-    for stdnt in stdntLst:
-        if (stdnt[0] in query) and (stdnt[1] in query):
-            first = f"{stdnt[0][0].upper()}{stdnt[0][1:]}"
-            secnd = f"{stdnt[1][0].upper()}{stdnt[1][1:]}"
-            return f"{first} {secnd}"
-    return None
-
-
-def p_executable( path ):
-    """ Return True if the file can be run """
-    # Author: ssam, https://ubuntuforums.org/showthread.php?t=1457094&s=d79fc51840d2783bb1461f9a049b7e03&p=9138623#post9138623
-    return bool( os.access(path, os.X_OK) )
 
 
 def find_executable( drctry ):
@@ -339,7 +306,10 @@ class GraphicsInspector:
     def __init__( self, configPath ):
         """ Set up the inspector for a grading session """
         read_config_into_env( configPath )
-        self.get_stored_grading_state( env_get("_STATE_PTH") )
+        try:
+            self.get_stored_grading_state( env_get("_STATE_PTH") )
+        except Exception as e:
+            self.state = dict()
         self.subdirs = [ f.path for f in os.scandir() if f.is_dir() ]
         self.subdirs.sort()
         self.reports = list()
@@ -350,45 +320,60 @@ class GraphicsInspector:
 
 
     ##### File Operations #################################################
-    # FIXME: MANAGE ALL THE ZIP SHIT
+    
+    def unzip_all( self ):
+        """ Unzip all student submissions """
+        count    = 0
+        zpPaths  = [path for path in os.listdir() if ".zip" in path]        
+        zpPaths.sort()
+
+        for zp_i in zpPaths:
+            folder = zp_i.split( '.' )[0]
+            prefix = self.get_student_prefix( folder )
+            
+            if prefix is not None:
+                folder = f"{prefix}{folder}"
+                count += 1
+                print( f"About to unpack {zp_i}\n\tto {folder}...", end='' )
+
+                try:
+                    shutil.unpack_archive( zp_i, folder )
+                    print( "SUCCESS" )
+                except Exception as e:
+                    print( f"FAILURE: {e}" )
+
+        print( f"Expanded {count} student submissions!" )
 
 
     ##### Grading #########################################################
 
-    def run_grading_session( self ):
-        """ Find it, Compile it, Run it, Look at it! """
-        # FIXME, START HERE: MOVE ALL THE MAIN SHIT HERE
-        pass
-    
+    def get_student_prefix( self, query ):
+        """ Get a prefix that orders the folders """
+        for stdnt in self.students:
+            if (stdnt[0] in query) and (stdnt[1] in query):
+                return f"{stdnt[1]}_{stdnt[0]}_"
+        return None
 
 
-########## MAIN ####################################################################################
-if __name__ == "__main__":
+    def get_student_name( self, query ):
+        """ Get a prefix that orders the folders """
+        for stdnt in self.students:
+            if (stdnt[0] in query) and (stdnt[1] in query):
+                first = f"{stdnt[0][0].upper()}{stdnt[0][1:]}"
+                secnd = f"{stdnt[1][0].upper()}{stdnt[1][1:]}"
+                return f"{first} {secnd}"
+        return None
 
 
-
-    for i, d in enumerate( subdirs ):
-
-        studentStr = str( d.split('/')[-1] )
-
-        if state != _STATE_INT:
-            if state != studentStr:
-                continue
-            else:
-                state = _STATE_INT
-
-        if get_student_prefix( students, studentStr ) is None:
-            continue
-        else:
-            store_grading_state( _STATE_PTH, studentStr )
-
+    def run_student_report( self, studentStr, studentDir ):
+        """ Get info on student submission and generate a report about it """
         reportPath = studentStr + ".txt"
         runStudent = True
         with open( reportPath, 'w' ) as f:
             out_line( f, f"########## Student: {studentStr} ##########\n\n" )
-            out_line( f, f"Hello {get_student_name( students, studentStr )}!\nTake note of the compilation errors shown below! (You can ignore make rules not in your Makefile.)\n\n" )
+            out_line( f, f"Hello {self.get_student_name( studentStr )}!\nTake note of the compilation errors shown below! (You can ignore make rules not in your Makefile.)\n\n" )
             
-            hwDir = dig_for_Makefile( d )
+            hwDir = dig_for_Makefile( studentDir )
             depth = str( hwDir ).count('/')
 
             if hwDir is not None:
@@ -405,34 +390,33 @@ if __name__ == "__main__":
             for sPath in srcPaths:
                 out_line( f, f"\n### Normal Scan for: {str(sPath).split('/')[-1]} ###\n" )
                 attempt_normal_scan( sPath, f )
-                
 
             if runStudent:
 
-                if _ALWAYS_PIE:
+                if env_get("_ALWAYS_PIE"):
                     modify_makefile_to_disable_PIE( hwDir )
 
-                for rule in ruleNames:
+                for rule in env_get("_RULE_NAMES"):
                     runStudent = make_in_dir_from_rule_with_output( hwDir, rule, f )
                     if runStudent:
                         break
-                
+
             if runStudent:
                 out_line( f, f"########## Compilation SUCCESS! ##########\n\n" )
                 fExec = find_executable( hwDir )
             else:
                 fExec = None
 
-            if len( _BAD_PATTRN ):
-                match = scrape_source( hwDir, _BAD_PATTRN )
+            if len( env_get("_BAD_PATTRN") ):
+                match = scrape_source( hwDir, env_get("_BAD_PATTRN") )
                 if len( match ):
-                    out_line( f, f"EXAMINE THIS LIST MATCHING \"{_BAD_PATTRN}\":\n{match}\n" )
+                    out_line( f, f"EXAMINE THIS LIST MATCHING \"{env_get("_BAD_PATTRN")}\":\n{match}\n" )
                 else:
                     print( f"No prohibited text found!\n" )
 
             fRead = find_README( hwDir )
             if fRead is not None:
-                os.system( f"{_TXT_READER} {fRead}" )
+                os.system( f"{env_get("_TXT_READER")} {fRead}" )
                 print( f"Opened README at {fRead}" )
             else:
                 out_line( f, f"BAD: >>NO<< README provided to the grader!" )
@@ -443,7 +427,7 @@ if __name__ == "__main__":
                 print( f"Running ./{fExec} ..." )
                 os.system( f"./{fExec}" )
             else:
-                os.system( f"./{hwDir}/{_GOOD_NAME}" )
+                os.system( f"./{hwDir}/{env_get("_GOOD_NAME")}" )
                 out_line( f, f"ERROR: >>NO<< executable found at the expected location!" )
         
             if not runStudent:
@@ -451,9 +435,53 @@ if __name__ == "__main__":
             
 
         if runStudent:
-            shutil.move( reportPath, os.path.join( _GOOD_DIR, reportPath ) )
+            shutil.move( reportPath, os.path.join( env_get("_GOOD_DIR"), reportPath ) )
         else:
-            shutil.move( reportPath, os.path.join( _BAD_DIR , reportPath ) )
+            shutil.move( reportPath, os.path.join( env_get("_BAD_DIR") , reportPath ) )
 
-        if i < (N_stdnts-1):
-            _ = input( "Press [Enter] to run the next report ..." )
+
+    def run_grading_session( self ):
+        """ Find it, Compile it, Run it, Look at it! """
+        for i, d in enumerate( self.subdirs ):
+            studentStr = str( d.split('/')[-1] )
+            if self.state["lastStudent"] != env_get("_STATE_INT"):
+                if self.state["lastStudent"] != studentStr:
+                    continue
+                else:
+                    self.state["lastStudent"] = env_get("_STATE_INT")
+
+            if self.get_student_prefix( studentStr ) is None:
+                continue
+            else:
+                self.store_grading_state( env_get("_STATE_PTH") )
+
+            self.run_student_report( studentStr )
+
+            if i < (self.N_stdnts-1):
+                _ = input( "Press [Enter] to run the next report ..." )
+    
+
+
+########## MAIN ####################################################################################
+if __name__ == "__main__":
+    grin = GraphicsInspector( _CONFIG_PATH )
+    grin.unzip_all()
+    grin.run_grading_session()
+
+    
+
+        
+
+        
+
+        
+            
+                
+
+            
+                
+            
+
+            
+
+        
