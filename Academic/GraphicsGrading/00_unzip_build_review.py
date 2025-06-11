@@ -112,8 +112,6 @@ def make_in_dir_from_rule_with_output( hwDir, rule, f ):
     return runStudent
 
 
-
-
 def find_executable( drctry ):
     """ Return the first executable encountered in `drctry` """
     mkPaths = [path for path in os.listdir( drctry ) if "akefile" in path]
@@ -282,6 +280,8 @@ class GraphicsInspector:
         if os.path.isfile( fPath ):
             with open( fPath, 'r' ) as f:
                 self.state = json.load( f )
+        else:
+            self.state = {"lastStudent": env_get("_STATE_INT") }
         return self.state
 
 
@@ -410,13 +410,13 @@ class GraphicsInspector:
             if len( env_get("_BAD_PATTRN") ):
                 match = scrape_source( hwDir, env_get("_BAD_PATTRN") )
                 if len( match ):
-                    out_line( f, f"EXAMINE THIS LIST MATCHING \"{env_get("_BAD_PATTRN")}\":\n{match}\n" )
+                    out_line( f, f"EXAMINE THIS LIST MATCHING \"{env_get('_BAD_PATTRN')}\":\n{match}\n" )
                 else:
                     print( f"No prohibited text found!\n" )
 
             fRead = find_README( hwDir )
             if fRead is not None:
-                os.system( f"{env_get("_TXT_READER")} {fRead}" )
+                os.system( f"{env_get('_TXT_READER')} {fRead}" )
                 print( f"Opened README at {fRead}" )
             else:
                 out_line( f, f"BAD: >>NO<< README provided to the grader!" )
@@ -427,7 +427,7 @@ class GraphicsInspector:
                 print( f"Running ./{fExec} ..." )
                 os.system( f"./{fExec}" )
             else:
-                os.system( f"./{hwDir}/{env_get("_GOOD_NAME")}" )
+                os.system( f"./{hwDir}/{env_get('_GOOD_NAME')}" )
                 out_line( f, f"ERROR: >>NO<< executable found at the expected location!" )
         
             if not runStudent:
@@ -455,7 +455,7 @@ class GraphicsInspector:
             else:
                 self.store_grading_state( env_get("_STATE_PTH") )
 
-            self.run_student_report( studentStr )
+            self.run_student_report( studentStr, d )
 
             if i < (self.N_stdnts-1):
                 _ = input( "Press [Enter] to run the next report ..." )
