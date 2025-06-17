@@ -2,7 +2,9 @@
 
 ##### Imports #####
 ### Standard ###
-import os, subprocess, shutil, json
+import os, subprocess, shutil, json, sys
+from time import sleep
+from collections import deque
 ### Special ###
 import numpy as np
 ### Local ###
@@ -265,6 +267,58 @@ def attempt_normal_scan( fPath, fOut ):
 
 
 
+########## PRINT HELPERS ###########################################################################
+
+class TColor:
+    """ Terminal Colors """
+    # Source: https://stackoverflow.com/a/287944
+    HEADER    = '\033[95m'
+    OKBLUE    = '\033[94m'
+    OKCYAN    = '\033[96m'
+    OKGREEN   = '\033[92m'
+    WARNING   = '\033[93m'
+    FAIL      = '\033[91m'
+    ENDC      = '\033[0m'
+    BOLD      = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
+def disp_text_header( titleStr : str, emphasis : int, preNL : int = 0, postNL : int = 0 ):
+    """ Make the headers that you like so much """
+    emphStr = '#'*int(emphasis)
+    newLine = '\n'
+    print( f"{newLine*int(preNL) if preNL else ''}{emphStr} {TColor.OKGREEN}{titleStr}{TColor.ENDC} {emphStr}{newLine*int(postNL) if postNL else ''}" )
+
+
+
+########## STRING ANALYSIS #########################################################################
+
+def levenshtein_search_dist( s1 : str, s2 : str ) -> int:
+    """ Get the edit distance between two strings """
+    # Author: Salvador Dali, https://stackoverflow.com/a/32558749
+    # 1. Trivial cases: One string is empty
+    if not len(s1):
+        return len(s2)
+    if not len(s2):
+        return len(s1)
+    # 2. This algo assumes second string is at least as long as the first
+    if len(s1) > len(s2):
+        s1, s2 = s2, s1
+    if s1 in s2:
+        return 0
+    # 3. Compute distance and return
+    distances  = range(len(s1) + 1)
+    distances_ = None
+    for i2, c2 in enumerate(s2):
+        distances_ = deque()
+        distances_.append( i2+1 )
+        for i1, c1 in enumerate(s1):
+            if c1 == c2:
+                distances_.append(distances[i1])
+            else:
+                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
+    return distances_.pop() + abs(len(s1)-len(s2)) # HACK
+
 
 
 ########## GRADER CLASS TO GRADE THE CLASS #########################################################
@@ -276,30 +330,32 @@ class GraphicsInspector:
 
     def get_stored_grading_state( self, fPath ):
         """ Get the local stored state """
-        self.state = None
+        self.state  = None
+        self.sPath  = fPath
+        self.stdNam = None
         if os.path.isfile( fPath ):
             with open( fPath, 'r' ) as f:
                 self.state = json.load( f )
         else:
             self.state = {"lastStudent": env_get("_STATE_INT") }
         return self.state
+    
 
-
-    def store_grading_state( self, fPath ):
+    def store_grading_state( self ):
         """ Set the local stored state """
-        with open( fPath, 'w' ) as f:
+        with open( self.sPath, 'w' ) as f:
             json.dump( self.state, f )
 
 
     def get_ordered_students( self, listPath ):
         """ Prep student list for searching """
-        self.students = list()
+        self.students : list[list[str]] = list()
         with open( listPath, 'r' ) as f:
             lines = f.readlines()
             for line in lines:
                 if len( line ) > 2:
                     self.students.append( line.replace('-','').lower().split() )
-        self.students.sort( key = lambda x: x[1] )
+        self.students.sort( key = lambda x: x[-1] )
         return self.students
 
 
@@ -345,33 +401,76 @@ class GraphicsInspector:
         print( f"Expanded {count} student submissions!" )
 
 
-    ##### Grading #########################################################
+    ##### Grading Helpers #################################################
 
     def get_student_prefix( self, query ):
         """ Get a prefix that orders the folders """
         for stdnt in self.students:
-            if (stdnt[0] in query) and (stdnt[1] in query):
-                return f"{stdnt[1]}_{stdnt[0]}_"
+            if (stdnt[0] in query) and (stdnt[-1] in query):
+                return f"{stdnt[-1]}_{stdnt[0]}_"
         return None
 
 
     def get_student_name( self, query ):
         """ Get a prefix that orders the folders """
         for stdnt in self.students:
-            if (stdnt[0] in query) and (stdnt[1] in query):
+            if (stdnt[0] in query) and (stdnt[-1] in query):
                 first = f"{stdnt[0][0].upper()}{stdnt[0][1:]}"
-                secnd = f"{stdnt[1][0].upper()}{stdnt[1][1:]}"
+                secnd = f"{stdnt[-1][0].upper()}{stdnt[-1][1:]}"
                 return f"{first} {secnd}"
         return None
+    
+
+    ##### Menu Functions ##################################################
+
+    def search_ranked_student_index_in_list( self, searchStr : str, Nrank : int = 5 ) -> list[tuple[str,int,int]]:
+        """ Return a list of indices that correspond to the search string, Ranked by Levenshtein edit distance """
+        rtnRank = list()
+        # 0. Remove initial and trailing space
+        searchStr = searchStr.strip()
+        # 1. Handle <Last,First> and <First Last> inputs
+        dbblSrch  = False
+        if ',' in searchStr:
+            dbblSrch = True
+            parts    = [prt.strip().lower() for prt in searchStr.split(',')]
+            lastSrch = parts[0]
+            frstSrch = parts[-1]
+        elif ' ' in searchStr:
+            dbblSrch = True
+            parts    = [prt.strip().lower() for prt in searchStr.split(' ')]
+            lastSrch = parts[-1]
+            frstSrch = parts[0]
+        # 2. Rank all students
+        for i, student in enumerate( self.students ):
+            stdntNm  = self.get_student_name( student )
+            lastLowr = student[0].lower()
+            frstLowr = student[-1].lower()
+            # A. Full Name Search, Ranked by total Levenshtein distance = first + last
+            if dbblSrch:
+                rtnRank.append( (stdntNm, i, levenshtein_search_dist( lastLowr, lastSrch )+levenshtein_search_dist( frstLowr, frstSrch ), ) )
+            # B. Single Name Search, Ranked by min Levenshtein distance across {first,last,}
+            else:
+                rtnRank.append( (stdntNm, i, min(levenshtein_search_dist( lastLowr, searchStr ),levenshtein_search_dist( frstLowr, searchStr )), ) )
+        rtnRank.sort( key = lambda x: x[-1] )
+        rtnRank = rtnRank[ 0 : Nrank ]
+        disp_text_header( f"{Nrank} Search Results", 1, 1, 0 )
+        for i, student in enumerate( rtnRank ):
+            print( f"\t{student[0]}, {student[-1]:02}, {i if (i>0) else '*'}" )
+        disp_text_header( f"End", 1, 0, 1 )
+        return rtnRank
+
+    ##### Grading #########################################################
+
 
 
     def run_student_report( self, studentStr, studentDir ):
         """ Get info on student submission and generate a report about it """
-        reportPath = studentStr + ".txt"
-        runStudent = True
+        reportPath  = studentStr + ".txt"
+        runStudent  = True
+        self.stdNam = self.get_student_name( studentStr )
         with open( reportPath, 'w' ) as f:
             out_line( f, f"########## Student: {studentStr} ##########\n\n" )
-            out_line( f, f"Hello {self.get_student_name( studentStr )}!\nTake note of the compilation errors shown below! (You can ignore make rules not in your Makefile.)\n\n" )
+            out_line( f, f"Hello {self.stdNam}!\nTake note of the compilation errors shown below! (You can ignore make rules not in your Makefile.)\n\n" )
             
             hwDir = dig_for_Makefile( studentDir )
             depth = str( hwDir ).count('/')
@@ -440,25 +539,106 @@ class GraphicsInspector:
             shutil.move( reportPath, os.path.join( env_get("_BAD_DIR") , reportPath ) )
 
 
+    def run_menu( self ):
+        """ Handle user input, per iteration """
+        usrCmd = input( "Press [Enter] to evaluate the next student: " ).upper()
+        print()
+        rtnState = {
+            'loop'    : "",
+            'iDelta'  :  0 ,
+            'index'   : -1 ,
+            'reverse' : False,
+        }
+        ## Handle user input ##
+        # Normal List Progression #
+        if not len( usrCmd ):
+            rtnState['iDelta'] = 1
+        # GOTO Student in Current List #
+        elif 'S:' in usrCmd:
+            searchStr = usrCmd.split(':')[-1].strip().lower()
+            print( f"Search for {searchStr} ..." )
+            ranking = self.search_ranked_student_index_in_list( searchStr, Nrank = env_get("_N_SEARCH_R") )
+            invalid = True
+            while invalid:
+                srchCmd = input( "Press [Enter] to accept top hit or enter number of desired result, Cancel with 'c': " ).upper()
+                if len( srchCmd ):
+                    try: 
+                        rnkChoice = int( srchCmd )
+                        invalid   = False
+                    except Exception as e:
+                        if srchCmd == 'Q':
+                            disp_text_header( f"END PROGRAM", 10, preNL = 2, postNL = 1 )
+                            sys.exit(0)
+                        elif srchCmd == 'C':
+                            rnkChoice = -1
+                            invalid   = False
+                        else:
+                            print( f"{srchCmd} was not a choice, Try again, {e}" )
+                else:
+                    rnkChoice = 0
+                    invalid   = False
+            if rnkChoice >= 0:
+                print( f"Return item {ranking[rnkChoice]} at index {ranking[rnkChoice][1]}" )
+                rtnState['index'] = ranking[rnkChoice][1]
+            rtnState['loop'] = "continue"
+        # Quit #
+        elif 'Q' in usrCmd:
+            disp_text_header( f"END PROGRAM", 10, preNL = 2, postNL = 1 )
+            sys.exit(0)
+        # Repeat Student #
+        elif 'R' in usrCmd:
+            print( f"<<< REPEAT {self.stdNam} Evaluation! <<<" )
+            rtnState['loop'] = "continue"
+        # Back to Previous Student #
+        elif 'P' in usrCmd:
+            rtnState['iDelta'] = -1
+            print( "^^^ PREVIOUS STUDENT ^^^" )
+            rtnState['reverse'] = True
+            rtnState['loop'   ] = "continue"
+        # Next Student List File #
+        elif 'E' in usrCmd:
+            print( "!///! END LIST !///!" )
+            rtnState['loop'] = "break"
+
+        return rtnState
+
+
     def run_grading_session( self ):
         """ Find it, Compile it, Run it, Look at it! """
-        for i, d in enumerate( self.subdirs ):
-            studentStr = str( d.split('/')[-1] )
-            if self.state["lastStudent"] != env_get("_STATE_INT"):
-                if self.state["lastStudent"] != studentStr:
+        i = 0
+        N = len( self.subdirs )
+        try:
+            while i < N:
+
+                # Allow search/cancel/quit at the start of each list, Prev/Redo are **disabled** here!
+                stateChange = self.run_menu()
+                # loopAction  = stateChange['loop']
+                if stateChange['index'] >= 0:
+                    i = stateChange['index']
+
+                d = self.subdirs[i]
+
+                studentStr = str( d.split('/')[-1] )
+                if self.state["lastStudent"] != env_get("_STATE_INT"):
+                    if self.state["lastStudent"] != studentStr:
+                        continue
+                    else:
+                        self.state["lastStudent"] = env_get("_STATE_INT")
+
+                if self.get_student_prefix( studentStr ) is None:
                     continue
                 else:
-                    self.state["lastStudent"] = env_get("_STATE_INT")
+                    self.store_grading_state( env_get("_STATE_PTH") )
 
-            if self.get_student_prefix( studentStr ) is None:
-                continue
-            else:
-                self.store_grading_state( env_get("_STATE_PTH") )
+                self.run_student_report( studentStr, d )
 
-            self.run_student_report( studentStr, d )
+                if i < (self.N_stdnts-1):
+                    _ = input( "Press [Enter] to run the next report ..." )
+                
+                i += 1
 
-            if i < (self.N_stdnts-1):
-                _ = input( "Press [Enter] to run the next report ..." )
+        except KeyboardInterrupt:
+            self.store_grading_state()
     
 
 
@@ -466,6 +646,7 @@ class GraphicsInspector:
 if __name__ == "__main__":
     grin = GraphicsInspector( _CONFIG_PATH )
     grin.unzip_all()
+    sleep( 0.5 )
     grin.run_grading_session()
 
     
