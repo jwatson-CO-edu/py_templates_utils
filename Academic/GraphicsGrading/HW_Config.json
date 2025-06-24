@@ -4,9 +4,10 @@
     "_STATE_INT" :  "AAAA",
     "_BAD_DIR"   :  "00_NOTIFY",
     "_GOOD_DIR"  :  "01_OK",
+    "_N_SEARCH_R": 20,
     "_ALWAYS_PIE":  false ,
     "_TXT_READER":  "xed",
     "_BAD_PATTRN":  "glu",
-    "_GOOD_NAME" : "hw5",
-    "_RULE_NAMES": ["", "hw1", "hw01", "HW1", "HW01"]
+    "_GOOD_NAME" : "hw2",
+    "_RULE_NAMES": ["", "hw2", "hw02", "HW2", "HW02"]
 }
