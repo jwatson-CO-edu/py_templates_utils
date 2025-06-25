@@ -252,7 +252,9 @@ def attempt_normal_scan( fPath, fOut ):
                     f_3vrtcs = False
                     s0       = pts_i[1] - pts_i[0]
                     s1       = pts_i[2] - pts_i[1]
-                    nrm_c    = vec_unit( np.cross( s0, s1 ) )
+                    print( f"Cross {s0} x {s1}", end =" = ", flush = True )
+                    nrm_c = vec_unit( np.cross( s0, s1 ) )
+                    print( nrm_c )
                     err_i    = angle_between( nrm_i, nrm_c )
                     if err_i > accept:
                         out_line( fOut, f"\n\tBAD NORMAL before line {j+1}, Err = {err_i:.3f} rad, {nrm_i} -vs- {nrm_c}" )
@@ -387,8 +389,11 @@ class GraphicsInspector:
             folder = zp_i.split( '.' )[0]
             prefix = self.get_student_prefix( folder )
             
-            if prefix is not None:
+            if (prefix is not None):
                 folder = f"{prefix}{folder}"
+                if os.path.exists( folder ):
+                    print( f"{folder} EXISTS!, Skip unzip ..." )
+                    continue
                 count += 1
                 print( f"About to unpack {zp_i}\n\tto {folder}...", end='' )
 
@@ -531,6 +536,8 @@ class GraphicsInspector:
         
             if not runStudent:
                 out_line( f, f"########## NOTIFY Student! ##########\n\n" )
+
+            out_line( f, f"\n{self.stdNam} eval COMPLETE!\n\n" )
             
 
         if runStudent:
@@ -609,6 +616,28 @@ class GraphicsInspector:
         N = len( self.subdirs )
         try:
             while i < N:
+                d          = self.subdirs[i]
+                studentStr = str( d.split('/')[-1] )
+
+                if studentStr[:2] == "__":
+                    i += 1
+                    continue
+
+                try:
+                    _ = int( studentStr[:2] )
+                    print( f"Admin Dir: {studentStr}" )
+                    i += 1
+                    continue
+                except ValueError:
+                    pass
+
+                if self.state["lastStudent"] != env_get("_STATE_INT"):
+                    if self.state["lastStudent"] != studentStr:
+                        print( f"{studentStr} was graded!, Skipping ..." )
+                        i += 1
+                        continue
+                    else:
+                        self.state["lastStudent"] = env_get("_STATE_INT")
 
                 # Allow search/cancel/quit at the start of each list, Prev/Redo are **disabled** here!
                 stateChange = self.run_menu()
@@ -616,24 +645,16 @@ class GraphicsInspector:
                 if stateChange['index'] >= 0:
                     i = stateChange['index']
 
-                d = self.subdirs[i]
-
-                studentStr = str( d.split('/')[-1] )
-                if self.state["lastStudent"] != env_get("_STATE_INT"):
-                    if self.state["lastStudent"] != studentStr:
-                        continue
-                    else:
-                        self.state["lastStudent"] = env_get("_STATE_INT")
-
                 if self.get_student_prefix( studentStr ) is None:
+                    print( f"Student not found!: {self.get_student_prefix( studentStr )} from {studentStr}" )
                     continue
                 else:
-                    self.store_grading_state( env_get("_STATE_PTH") )
+                    self.store_grading_state()
 
                 self.run_student_report( studentStr, d )
 
-                if i < (self.N_stdnts-1):
-                    _ = input( "Press [Enter] to run the next report ..." )
+                # if i < (self.N_stdnts-1):
+                #     _ = input( "Press [Enter] to run the next report ..." )
                 
                 i += 1
 
