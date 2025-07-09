@@ -7,7 +7,7 @@
     "_N_SEARCH_R": 20,
     "_ALWAYS_PIE":  false ,
     "_TXT_READER":  "xed",
-    "_BAD_PATTRN":  "glu",
-    "_GOOD_NAME" : "hw2",
-    "_RULE_NAMES": ["", "hw2", "hw02", "HW2", "HW02"]
+    "_BAD_PATTRN":  "glew",
+    "_GOOD_NAME" : "hw3",
+    "_RULE_NAMES": ["", "hw3", "hw03", "HW3", "HW03"]
 }
