@@ -11,13 +11,10 @@ _SIZE_MAX =   6
 _LINE_MIN =  10
 _LINE_MAX =  50
 _TURN_MIN =   5
-_TURN_MAX = 175
+_TURN_MAX = 120
 _COLR_MIN = 124/255.0
 _COLR_MAX = 255/255.0
-## Drawing Probabilities ##
-_PROB_SIZ = 0.125
-_PROB_PEN = 0.25
-_PROB_BRK = 1.0/45
+
 
 
 def sample_vec_normal_int( center, scale ):
@@ -54,6 +51,10 @@ def randf( lo, hi ):
 
 def draw_random_ideogram( bbox ):
     """ Draw a diagram according to the above settings """
+    ## Drawing Probabilities ##
+    _PROB_SIZ = randf( 0.125, 0.25 )
+    _PROB_PEN = randf( 0.125, 0.25 )
+    _PROB_BRK = randf( 1.0/50, 1.0/40 )
     goto( sample_box_normal_int( bbox ) )
     down = True
     pendown()
