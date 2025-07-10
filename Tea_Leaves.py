@@ -6,14 +6,10 @@ from random import random, choice
 import numpy as np
 
 ## Drawing Params ##
-_SIZE_MIN =   2
-_SIZE_MAX =   6
-_LINE_MIN =  10
-_LINE_MAX =  50
-_TURN_MIN =   5
-_TURN_MAX = 120
 _COLR_MIN = 124/255.0
 _COLR_MAX = 255/255.0
+_PROB_MIN = 0.0625
+_PROB_MAX = 0.5000
 
 
 
@@ -51,9 +47,17 @@ def randf( lo, hi ):
 
 def draw_random_ideogram( bbox ):
     """ Draw a diagram according to the above settings """
+    _SCALE    = np.linalg.norm( np.subtract( bbox[1], bbox[0] ) )
+    ## Drawing Params ##
+    _SIZE_MIN = choose_int_range( 1, 3 )
+    _SIZE_MAX = choose_int_range( _SIZE_MIN+1, _SIZE_MIN+9 )
+    _LINE_MIN =  _SCALE / 50.0
+    _LINE_MAX =  _SCALE /  5.0
+    _TURN_MIN = randf(  5.0,  50.0 )  
+    _TURN_MAX = randf( 90.0, 170.0 )  
     ## Drawing Probabilities ##
-    _PROB_SIZ = randf( 0.125, 0.25 )
-    _PROB_PEN = randf( 0.125, 0.25 )
+    _PROB_SIZ = randf( _PROB_MIN, _PROB_MAX )
+    _PROB_PEN = randf( _PROB_MIN, _PROB_MAX )
     _PROB_BRK = randf( 1.0/50, 1.0/40 )
     goto( sample_box_normal_int( bbox ) )
     down = True
