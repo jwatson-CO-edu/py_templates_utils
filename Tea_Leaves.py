@@ -34,7 +34,7 @@ def sample_box_normal_int( bbox ):
     scale  = [0 for _ in range(N)]
     for i in range(N):
         center[i] = (bbox[1,i] + bbox[0,i])/2.0
-        scale[i]  = (bbox[1,i] - bbox[0,i])/4.0
+        scale[i]  = (bbox[1,i] - bbox[0,i])/3.5
     return sample_vec_normal_int( center, scale )
 
 
