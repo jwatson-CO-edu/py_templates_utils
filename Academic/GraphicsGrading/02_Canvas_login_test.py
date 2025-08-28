@@ -22,8 +22,8 @@ from urllib.parse import urlparse
 import time
 
 # _BASE_URL   = "https://colorado.instructure.com"
-_BASE_URL   = "https://canvas.instructure.com/api/v1/"
-# _BASE_URL   = "https://colorado.instructure.com/api/v1/"
+_BASE_URL   = "https://canvas.instructure.com/api/v1"
+# _BASE_URL   = "https://colorado.instructure.com/api/v1"
 _TOKEN_FILE = "secrets/canvas.json"
 _COURSE_ID  = "122404"
 
@@ -69,31 +69,16 @@ class CanvasManager:
 
 
     def get_submissions( self, assignment_id ):
-        """
-        Fetch all submissions for a specific assignment.
-        
-        Args:
-            course_id (str): Canvas course ID
-            assignment_id (str): Canvas assignment ID
-            
-        Returns:
-            list: List of submission objects
-        """
-        # url = f"{self.canvas_url}/api/v1/courses/{self.courseID}/assignments/{assignment_id}/submissions"
-        url = f"{self.canvas_url}/{self.courseID}/assignments/{assignment_id}/"
-        
-        # Include submission history, comments, and attachments
+        """ Fetch all submissions for a specific assignment. """
+        url = f"{self.canvas_url}/courses/{self.courseID}/assignments/{assignment_id}/submissions"
+        print( url )
         params = {
-            'include[]': ['submission_history', 'submission_comments', 'user', 'attachments'],
-            'per_page': 100  # Maximum allowed per page
+            'include[]': ['assignment','submission_history', 'submission_comments', 'user', 'attachments'],
         }
-        
         submissions = []
-        
         print(f"Fetching submissions for assignment {assignment_id}...")
-        
         while url:
-            response = self.session.get( url, params=params )
+            response = self.session.get( url, params = params )
             
             if response.status_code != 200:
                 raise Exception(f"Failed to fetch submissions: {response.status_code} - {response.text}")
@@ -117,5 +102,6 @@ class CanvasManager:
     
 if __name__ == "__main__":
     cm = CanvasManager()
-    cm.get_students()
-    # cm.get_submissions( "2429883" )
+    # cm.get_students()
+    cm.get_submissions( "2429883" )
+    # cm.get_submissions( 2429883 )
