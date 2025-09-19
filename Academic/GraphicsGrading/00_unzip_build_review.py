@@ -271,6 +271,32 @@ def attempt_normal_scan( fPath, fOut ):
     return nFound
 
 
+def concat_structs( op1, op2 ):
+    """ Combine two data structures, recursively """
+    if isinstance( op1, list ) and isinstance( op2, (list, deque,) ):
+        rtnLst = deque()
+        rtnLst.extend( op1 )
+        rtnLst.extend( op2 )
+        return list( rtnLst )
+    elif isinstance( op1, deque ) and isinstance( op2, (list, deque,) ):
+        rtnDqu = deque()
+        rtnDqu.extend( op1 )
+        rtnDqu.extend( op2 )
+        return rtnDqu
+    elif isinstance( op1, dict ) and isinstance( op2, dict ):
+        rtnDct = dict()
+        for k1, v1 in op1.items():
+            if k1 in op2:
+                rtnDct[ k1 ] = concat_structs( v1, op2[ k1 ] )
+            else:
+                rtnDct[ k1 ] = v1
+        for k2, v2 in op1.items():
+            if k2 not in rtnDct:
+                rtnDct[ k2 ] = v2
+        return rtnDct
+    else:
+        return None
+
 
 ########## PRINT HELPERS ###########################################################################
 
@@ -371,6 +397,7 @@ class GraphicsInspector:
             self.get_stored_grading_state( env_get("_STATE_PTH") )
         except Exception as e:
             self.state = dict()
+            self.sPath = env_get("_STATE_PTH")
         self.subdirs = [ f.path for f in os.scandir() if f.is_dir() ]
         self.subdirs.sort()
         self.reports = list()
@@ -471,7 +498,7 @@ class GraphicsInspector:
         return rtnRank
 
 
-    ##### Grading #########################################################
+    ##### Grading Helpers #################################################
 
     def get_timestamp( self ):
         """ Get the filename of today's daily note """
@@ -480,8 +507,8 @@ class GraphicsInspector:
 
 
     def truthy_user_response( self, 
-                             prompt : str = "\nProvide an answer that can be evaluated as a Boolean, then press [Enter]: ",
-                             suppressBool : bool = False ):
+                              prompt : str = "\nProvide an answer that can be evaluated as a Boolean, then press [Enter]: ",
+                              suppressBool : bool = False ):
         """ Return a bool based on a user response """
         res = literal_eval( input( prompt ) )
         if suppressBool:
@@ -502,6 +529,36 @@ class GraphicsInspector:
                 print( f"\nBAD USER RESPONSE: {e}\n" )
                 return None
 
+    
+    def prompt_comment_bullets( self, topicStr = "COMMENTS" ) -> dict:
+        """ Build up a comment in pieces """    
+        rtnDct = { topicStr: list() }
+        while 1:
+            comment = input( f"\nWrite a comment for this student and then press [Enter]: " )
+            if len( comment ):
+                rtnDct[ topicStr ].append( comment )
+            else:
+                break
+        return rtnDct
+        
+
+    def prompt_deduction_bullets( self, topicStr = "DEDUCTIONS" ) -> dict:
+        """ Build up a comment in pieces """    
+        rtnDct = { topicStr: list() }
+        while 1:
+            comment = input( f"\nWrite a comment '&' deduction for this student and then press [Enter]: " )
+            if len( comment ):
+                parts = comment.split('&')
+                rtnDct[ topicStr ].append( {
+                    "Remark": f"{parts[0]}",
+                    "Penalty": int( parts[1] )
+                } )
+            else:
+                break
+        return rtnDct
+
+
+    ##### Per-Student Reporting ###########################################
 
     def run_student_report( self, studentStr, studentDir ):
         """ Get info on student submission and generate a report about it """
@@ -511,21 +568,44 @@ class GraphicsInspector:
         self.stdNam = self.get_student_name( studentStr )
         rubric["Name"     ] = self.stdNam 
         rubric["Timestamp"] = self.get_timestamp() 
+
+        def get_rubric_flags( key ):
+            """ Get any flags associated with this rubric `key` """
+            nonlocal rubric, self
+            if (key in self.rubric) and ("Flags" in self.rubric[ key ]):
+                return list( self.rubric[ key ]["Flags"] )
+            else:
+                return list()
+
+        def handle_rubric_item( key, res = None  ):
+            nonlocal rubric, self
+            # rtnDct = dict( rubric["Feedback"] )
+            if key in self.rubric:
+                if "Ask" in get_rubric_flags( key ):
+                    res = self.truthy_user_response( f"Evaluate Category, {name_i}" )
+                if res != self.rubric[ key ]["Correct"]:
+                    penalty = True
+                    if "Resubmit" in get_rubric_flags( key ):
+                        penalty = self.truthy_user_response( f"\nForce penalty for {key}? (Repeat Offense): " )
+                        if not penalty:
+                            if "Remark" in self.rubric[ key ]:
+                                rubric["Feedback"]["RESUBMIT"].append( self.rubric[ key ]["Remark"] )
+                            else:
+                                rubric["Feedback"]["RESUBMIT"].append( input( f"\nNO remark for {key}: " ) )
+                    if penalty:
+                        rubric["Feedback"]["DEDUCTIONS"].append( {
+                            "Remark": f"{self.rubric[ key ]["Remark"]}",
+                            "Penalty": int( self.rubric[ key ]["Penalty"] )
+                        } )
+
         with open( reportPath, 'w' ) as f:
             out_line( f, f"########## Student: {studentStr} ##########\n\n" )
             out_line( f, f"Hello {self.stdNam}!\nTake note of the compilation errors shown below! (You can ignore make rules not in your Makefile.)\n\n" )
             
-            for name_i, spec_i in self.rubric.items():
-                out_line( f, f"##### Category: {name_i} #####\n" )
-                res = None
-                if "Ask" in spec_i:
-                    res = self.truthy_user_response( f"Evaluate Category, {name_i}" )
-                    if res != spec_i["Correct"]:
-                        rubric["Student Score"] += spec_i["Penalty"]
-
-
+            ##### Zip File Depth ################# 
             hwDir = dig_for_Makefile( studentDir )
             depth = str( hwDir ).count('/')
+            handle_rubric_item( "Executable Depth", depth )
 
             if hwDir is not None:
                 out_line( f, f"Makefile DEPTH: {depth}\n" )
@@ -533,31 +613,32 @@ class GraphicsInspector:
             else:
                 out_line( f, f"FAILURE: NO MAKEFILE IN THIS SUBMISSION\n" )
                 runStudent = False
-
+            
+            ##### Erase Previous Out Files #######
             make_clean( hwDir )
 
-            out_line( f, f"##### Normal Scan for: {studentStr} #####\n" )
-            srcPaths = source_and_header_full_paths( hwDir )
-            for sPath in srcPaths:
-                out_line( f, f"\n### Normal Scan for: {str(sPath).split('/')[-1]} ###\n" )
-                attempt_normal_scan( sPath, f )
+            ##### Zip File Depth #################
+            if "Normal Scan" in self.rubric:
+                out_line( f, f"##### Normal Scan for: {studentStr} #####\n" )
+                srcPaths = source_and_header_full_paths( hwDir )
+                for sPath in srcPaths:
+                    out_line( f, f"\n### Normal Scan for: {str(sPath).split('/')[-1]} ###\n" )
+                    attempt_normal_scan( sPath, f )
+                handle_rubric_item( "Normal Scan" )
 
-            if runStudent:
-
-                if env_get("_ALWAYS_PIE"):
-                    modify_makefile_to_disable_PIE( hwDir )
-
-                for rule in env_get("_RULE_NAMES"):
-                    runStudent = make_in_dir_from_rule_with_output( hwDir, rule, f )
-                    if runStudent:
-                        break
-
-            if runStudent:
-                out_line( f, f"########## Compilation SUCCESS! ##########\n\n" )
-                fExec = find_executable( hwDir )
+            ##### Find and Display README ########
+            fRead = find_README( hwDir )
+            pRead = None
+            if fRead is not None:
+                os.system( f"{env_get('_TXT_READER')} {fRead}" )
+                print( f"Opened README at {fRead}" )
+                pRead = True
             else:
-                fExec = None
+                out_line( f, f"BAD: >>NO<< README provided to the grader!" )
+                pRead = False
+            handle_rubric_item( "README Present", pRead )
 
+            ##### Source Check (Banned Libs) #####
             if len( env_get("_BAD_PATTRN") ):
                 match = scrape_source( hwDir, env_get("_BAD_PATTRN") )
                 if len( match ):
@@ -565,14 +646,22 @@ class GraphicsInspector:
                 else:
                     print( f"No prohibited text found!\n" )
 
-            fRead = find_README( hwDir )
-            if fRead is not None:
-                os.system( f"{env_get('_TXT_READER')} {fRead}" )
-                print( f"Opened README at {fRead}" )
+            ##### Attempt Compilation ############
+            if runStudent:
+                if env_get("_ALWAYS_PIE"):
+                    modify_makefile_to_disable_PIE( hwDir )
+                for rule in env_get("_RULE_NAMES"):
+                    runStudent = make_in_dir_from_rule_with_output( hwDir, rule, f )
+                    if runStudent:
+                        break
+            if runStudent:
+                out_line( f, f"########## Compilation SUCCESS! ##########\n\n" )
+                fExec = find_executable( hwDir )
             else:
-                out_line( f, f"BAD: >>NO<< README provided to the grader!" )
-
+                fExec = None
             runStudent = (fExec is not None) and os.path.isfile( fExec )
+            handle_rubric_item( "Compiles Without Errors", runStudent )
+            
             if runStudent:
                 print( f"Executable NAME: {str(fExec).split('/')[-1]}\n" )
                 print( f"Running ./{fExec} ..." )
@@ -580,19 +669,41 @@ class GraphicsInspector:
             else:
                 os.system( f"./{hwDir}/{env_get('_GOOD_NAME')}" )
                 out_line( f, f"ERROR: >>NO<< executable found at the expected location!" )
-        
             if not runStudent:
                 out_line( f, f"########## NOTIFY Student! ##########\n\n" )
 
-            out_line( f, f"\n{self.stdNam} eval COMPLETE!\n\n" )
-            
+            out_line( f, f"\n{self.stdNam} eval COMPLETE!\n\n" ) 
+
+            ##### Prompt Final Comments ############
+            rubric["Feedback"] = concat_structs( rubric["Feedback"], self.prompt_comment_bullets()   )
+            rubric["Feedback"] = concat_structs( rubric["Feedback"], self.prompt_deduction_bullets() )
+
+            ##### Compute Final Score ############
+            print( "##### PASTE THESE COMMENTS #####" )
+            print( TColor.BOLD, end="", flush=True )
+            if len( rubric["Feedback"]["RESUBMIT"] ):
+                print( "### RESUBMIT ###" )
+                for item in rubric["Feedback"]["RESUBMIT"]:
+                    print( item )
+            if len( rubric["Feedback"]["COMMENTS"] ):
+                print( "### COMMENTS ###" )
+                for item in rubric["Feedback"]["COMMENTS"]:
+                    print( item )
+            if len( rubric["Feedback"]["DEDUCTIONS"] ):
+                print( "### DEDUCTIONS ###" )
+                for item in rubric["Feedback"]["DEDUCTIONS"]:
+                    print( item["Remark"] )
+                    rubric["Student Score"] += item["Penalty"]
+            print( TColor.ENDC, end="", flush=True )
+            print( "##### END PASTE #####" )
+            out_line( f, f"\n{self.stdNam} final score: {rubric["Student Score"]}!\n\n" ) 
 
         if runStudent:
             shutil.move( reportPath, os.path.join( env_get("_GOOD_DIR"), reportPath ) )
         else:
             shutil.move( reportPath, os.path.join( env_get("_BAD_DIR") , reportPath ) )
 
-
+        
     def run_menu( self ):
         """ Handle user input, per iteration """
         usrCmd = input( "Press [Enter] to evaluate the next student: " ).upper()
