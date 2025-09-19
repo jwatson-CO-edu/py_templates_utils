@@ -5,6 +5,9 @@
 import os, subprocess, shutil, json, sys
 from time import sleep
 from collections import deque
+from copy import deepcopy
+from datetime import date, datetime
+from ast import literal_eval
 ### Special ###
 import numpy as np
 ### Local ###
@@ -375,6 +378,9 @@ class GraphicsInspector:
         self.N_stdnts = len( self.students )
         os.makedirs( env_get("_BAD_DIR" ), exist_ok = True )
         os.makedirs( env_get("_GOOD_DIR"), exist_ok = True )
+        self.rubric   : dict = env_get("_RUBRIC_DCT" )
+        self.template : dict = env_get("_SCORING_DCT")
+
 
 
     ##### File Operations #################################################
@@ -464,19 +470,60 @@ class GraphicsInspector:
         disp_text_header( f"End", 1, 0, 1 )
         return rtnRank
 
+
     ##### Grading #########################################################
 
+    def get_timestamp( self ):
+        """ Get the filename of today's daily note """
+        # Get the current date, Format the date as YYYY-MM-DD
+        return f"{date.today().strftime('%Y-%m-%d')}_{datetime.now().strftime('%H-%M-%S')}"
+
+
+    def truthy_user_response( self, 
+                             prompt : str = "\nProvide an answer that can be evaluated as a Boolean, then press [Enter]: ",
+                             suppressBool : bool = False ):
+        """ Return a bool based on a user response """
+        res = literal_eval( input( prompt ) )
+        if suppressBool:
+            return res
+        if isinstance( res, str ):
+            if not len( res ):
+                return None
+            if "y" in res.lower():
+                return True
+            elif "n" in res.lower():
+                return False
+            else:
+                return None
+        else:
+            try:
+                return bool( res )
+            except Exception as e:
+                print( f"\nBAD USER RESPONSE: {e}\n" )
+                return None
 
 
     def run_student_report( self, studentStr, studentDir ):
         """ Get info on student submission and generate a report about it """
         reportPath  = studentStr + ".txt"
         runStudent  = True
+        rubric      = deepcopy( self.template )
         self.stdNam = self.get_student_name( studentStr )
+        rubric["Name"     ] = self.stdNam 
+        rubric["Timestamp"] = self.get_timestamp() 
         with open( reportPath, 'w' ) as f:
             out_line( f, f"########## Student: {studentStr} ##########\n\n" )
             out_line( f, f"Hello {self.stdNam}!\nTake note of the compilation errors shown below! (You can ignore make rules not in your Makefile.)\n\n" )
             
+            for name_i, spec_i in self.rubric.items():
+                out_line( f, f"##### Category: {name_i} #####\n" )
+                res = None
+                if "Ask" in spec_i:
+                    res = self.truthy_user_response( f"Evaluate Category, {name_i}" )
+                    if res != spec_i["Correct"]:
+                        rubric["Student Score"] += spec_i["Penalty"]
+
+
             hwDir = dig_for_Makefile( studentDir )
             depth = str( hwDir ).count('/')
 

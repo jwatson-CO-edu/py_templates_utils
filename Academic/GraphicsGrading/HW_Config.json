@@ -9,5 +9,21 @@
     "_TXT_READER":  "xed",
     "_BAD_PATTRN":  "glew",
     "_GOOD_NAME" : "hw3",
-    "_RULE_NAMES": ["", "hw3", "hw03", "HW3", "HW03"]
+    "_RULE_NAMES": ["", "hw3", "hw03", "HW3", "HW03"],
+    "_RUBRIC_DCT": {
+        "Nontrivial Geometry": {"Ask": true, "Resubmit": 1, "Penalty": -50}, 
+        "Intuitive Rotation":  {"Ask": true, "Resubmit": 1, "Penalty": -20}, 
+
+        "Executable Depth":        {"Correct": 1    , "Default": 2    , "Penalty": -10},
+        "Distort on Resize":       {"Correct": false, "Default": false, "Penalty": -10, "Ask": true},
+        "Compiles Without Errors": {"Correct": true , "Default": true , "Penalty": -10}
+    },
+    "_SCORING_DCT": {
+        "Name"          : "STUDENT NAME",
+        "Timestamp"     : "YYYY-MM-DD_HH-MM-SS",
+        "Possible Score": 100,
+        "Student Score" : 100,
+        "Comments"      : [],
+        "Penalties"     : {}
+    }
 }
