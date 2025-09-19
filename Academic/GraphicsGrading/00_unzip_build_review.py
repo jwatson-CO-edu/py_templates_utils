@@ -582,7 +582,7 @@ class GraphicsInspector:
             # rtnDct = dict( rubric["Feedback"] )
             if key in self.rubric:
                 if "Ask" in get_rubric_flags( key ):
-                    res = self.truthy_user_response( f"Evaluate Category, {name_i}" )
+                    res = self.truthy_user_response( f"Evaluate Category, {key}" )
                 if res != self.rubric[ key ]["Correct"]:
                     penalty = True
                     if "Resubmit" in get_rubric_flags( key ):
