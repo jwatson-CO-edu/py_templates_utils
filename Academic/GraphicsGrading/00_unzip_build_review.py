@@ -212,6 +212,33 @@ def angle_between( v1, v2 ):
         return np.arccos( vvDot )
 
 
+def count_comment_lines_and_SLOC( fPath ):
+    """ Return count of commented lines and SLOC  """
+    lines = list()
+    multi = False
+    Ncmnt = 0
+    Nsloc = 0
+    # WARNING: THERE WILL BE EDGE CASES WITH UNBALANCED COMMENTS THAT I DO NOT CURRENTLY CARE ABOUT
+    with open( fPath, 'r' ) as f:
+        try:
+            lines = f.readlines()
+        except Exception as e:
+            print( f"\nFAILED READ because {e}\n" )
+            return 0, 0
+        for line in lines:
+            if ("//" in line) or ("/*" in line) or ("*/" in line):
+                Ncmnt += 1
+                if ("/*" in line):
+                    multi = True
+                if ("*/" in line):
+                    multi = False
+            elif multi:
+                Ncmnt += 1
+            else:
+                Nsloc += 1
+    return Ncmnt, Nsloc
+
+
 def attempt_normal_scan( fPath, fOut ):
     """ Attempt to determine if normals are correctly formed """
     f_NormRd = False
@@ -682,11 +709,15 @@ class GraphicsInspector:
             
             ##### Erase Previous Out Files #######
             make_clean( hwDir )
+            ##### Fetch Source Files #############
+            srcPaths = source_and_header_full_paths( hwDir )
+
+            
+
 
             ##### Zip File Depth #################
             if "Normal Scan" in self.rubric:
                 out_line( f, f"##### Normal Scan for: {studentStr} #####\n" )
-                srcPaths = source_and_header_full_paths( hwDir )
                 for sPath in srcPaths:
                     out_line( f, f"\n### Normal Scan for: {str(sPath).split('/')[-1]} ###\n" )
                     attempt_normal_scan( sPath, f )
@@ -747,6 +778,25 @@ class GraphicsInspector:
                 out_line( f, f"ERROR: >>NO<< executable found at the expected location!" )
             if not runStudent:
                 out_line( f, f"########## NOTIFY Student! ##########\n\n" )
+
+            ##### Quick Source Inspection ########
+            out_line( f, f"##### Source Inspection for: {studentStr} #####\n" )
+            cmnt_T = sloc_T = 0
+            slcMax = 0
+            pthMax = None
+            for sPath in srcPaths:
+                cmnt_i, sloc_i = count_comment_lines_and_SLOC( sPath )
+                cmnt_T += cmnt_i
+                sloc_T += sloc_i
+                if (sloc_i > slcMax):
+                    slcMax = sloc_i
+                    pthMax = sPath
+            cmntFrac = cmnt_T/(cmnt_T+sloc_T)
+            if (cmntFrac < env_get("_COMNT_FRAC")):
+                print( f"{TColor.WARNING}", end="", flush=True )
+            print( f"Source content is {cmntFrac} comments!{TColor.ENDC}" )
+            if pthMax is not None:
+                os.system( f"{env_get('_TXT_READER')} {pthMax}" )
 
             ##### Manual Eval Categories ###########
             for cat in ["Nontrivial Geometry", "Intuitive Rotation", "Distort on Resize","Contains GenAI Output",]:

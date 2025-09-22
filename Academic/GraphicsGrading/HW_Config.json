@@ -5,6 +5,7 @@
     "_BAD_DIR"   :  "00_NOTIFY",
     "_GOOD_DIR"  :  "01_OK",
     "_N_SEARCH_R": 20,
+    "_COMNT_FRAC": 0.10,
     "_ALWAYS_PIE":  false ,
     "_TXT_READER":  "xed",
     "_BAD_PATTRN":  "glew",
