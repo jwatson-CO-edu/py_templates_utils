@@ -86,6 +86,10 @@ def scrape_source( hwDir, pattern ):
 def make_in_dir_from_rule_with_output( hwDir, rule, f ):
     """ Make the rule in the child directory and report results """
     runStudent = True
+    rtnDct = {
+        "out": None,
+        "err": None,
+    }
 
     try:
         ruleStr = f"make {rule} -C '{hwDir}'"
@@ -101,6 +105,8 @@ def make_in_dir_from_rule_with_output( hwDir, rule, f ):
         out = out.decode()
         err = err.decode()
         errcode = process.returncode
+        rtnDct["out"] = out
+        rtnDct["err"] = err
 
         out_line( f, f"COMPILE Command:  {ruleStr}" )
 
@@ -114,7 +120,7 @@ def make_in_dir_from_rule_with_output( hwDir, rule, f ):
         out_line( f, f"FAILURE, PROCESS ERROR:  {e}" )
         runStudent = False
 
-    return runStudent
+    return runStudent, rtnDct
 
 
 def find_executable( drctry ):
@@ -707,11 +713,18 @@ class GraphicsInspector:
                     print( f"No prohibited text found!\n" )
 
             ##### Attempt Compilation ############
+            compResOut = None 
             if runStudent:
                 if env_get("_ALWAYS_PIE"):
                     modify_makefile_to_disable_PIE( hwDir )
+                firstRule = True
+                
                 for rule in env_get("_RULE_NAMES"):
-                    runStudent = make_in_dir_from_rule_with_output( hwDir, rule, f )
+                    if firstRule:
+                        runStudent, compResOut = make_in_dir_from_rule_with_output( hwDir, rule, f )
+                        firstRule = False
+                    else:
+                        runStudent, _ = make_in_dir_from_rule_with_output( hwDir, rule, f )
                     if runStudent:
                         break
             if runStudent:
@@ -761,9 +774,20 @@ class GraphicsInspector:
                     print( f"* {item['Remark']}, {item['Penalty']}" )
                     rubric["Student Score"] += item["Penalty"]
             print( TColor.ENDC, end="", flush=True )
-            print( "##### END PASTE #####" )
+            print( "##### END PASTE #####\n" )
+
+            print( f"##### PASTE COMPILER OUTPUT (IF HELPFUL) #####" )
+            print( f"{TColor.BOLD}{TColor.OKBLUE}### OUTPUT ###" )
+            print( compResOut['out'] )
+            print( f"{TColor.ENDC}{TColor.BOLD}{TColor.FAIL}### ERRORS ###" )
+            print( compResOut['err'] )
+            print( f"{TColor.ENDC}##### END PASTE #####\n" )
+
             out_line( f, f"\n{self.stdNam} final score: {rubric['Student Score']}\n\n" )
             out_line( f, f"\n{self.stdNam} eval COMPLETE!\n\n" ) 
+
+            
+
 
             # self.store_student_eval( self.stdNam, rubric )
             self.store_student_eval( studentStr, rubric )
