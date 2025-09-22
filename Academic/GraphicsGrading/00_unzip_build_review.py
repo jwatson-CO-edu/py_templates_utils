@@ -368,14 +368,30 @@ class GraphicsInspector:
             with open( fPath, 'r' ) as f:
                 self.state = json.load( f )
         else:
-            self.state = {"lastStudent": env_get("_STATE_INT") }
+            self.state = {"lastStudent": env_get("_STATE_INT"),}
+        if "evals" not in self.state:
+            self.state["evals"] = dict()
+        if "resubNames" not in self.state:
+            self.state["resubNames"] = list()
         return self.state
     
+
+    def store_student_eval( self, nameKey : str, record : dict ):
+        """ Store the student record """
+        self.state["evals"][ nameKey ] = deepcopy( record )
+
+    
+    def fetch_student_eval( self, nameKey ):
+        """ Fetch the student record  if it exists, Otherwise return `None` """
+        if nameKey in self.state["evals"]: 
+            return deepcopy( self.state["evals"][ nameKey ] )
+        else:
+            return None  
 
     def store_grading_state( self ):
         """ Set the local stored state """
         with open( self.sPath, 'w' ) as f:
-            json.dump( self.state, f )
+            json.dump( self.state, f, indent = 2 )
 
 
     def get_ordered_students( self, listPath ):
@@ -440,21 +456,24 @@ class GraphicsInspector:
 
 
     ##### Grading Helpers #################################################
+    idx0 = 0
+    idx1 = 1
 
     def get_student_prefix( self, query ):
         """ Get a prefix that orders the folders """
         for stdnt in self.students:
-            if (stdnt[0] in query) and (stdnt[-1] in query):
-                return f"{stdnt[-1]}_{stdnt[0]}_"
+            if (stdnt[GraphicsInspector.idx0] in query) and (stdnt[GraphicsInspector.idx1] in query):
+                return f"{stdnt[GraphicsInspector.idx1]}_{stdnt[GraphicsInspector.idx0]}_"
         return None
 
 
     def get_student_name( self, query ):
         """ Get a prefix that orders the folders """
+        
         for stdnt in self.students:
-            if (stdnt[0] in query) and (stdnt[-1] in query):
-                first = f"{stdnt[0][0].upper()}{stdnt[0][1:]}"
-                secnd = f"{stdnt[-1][0].upper()}{stdnt[-1][1:]}"
+            if (stdnt[GraphicsInspector.idx0] in query) and (stdnt[GraphicsInspector.idx1] in query):
+                first = f"{stdnt[GraphicsInspector.idx0][0].upper()}{stdnt[GraphicsInspector.idx0][1:]}"
+                secnd = f"{stdnt[GraphicsInspector.idx1][0].upper()}{stdnt[GraphicsInspector.idx1][1:]}"
                 return f"{first} {secnd}"
         return None
     
@@ -507,27 +526,17 @@ class GraphicsInspector:
 
 
     def truthy_user_response( self, 
-                              prompt : str = "\nProvide an answer that can be evaluated as a Boolean, then press [Enter]: ",
-                              suppressBool : bool = False ):
+                              prompt : str = "\nProvide an answer that can be evaluated as a Boolean, then press [Enter]: "  ):
         """ Return a bool based on a user response """
-        res = literal_eval( input( prompt ) )
-        if suppressBool:
-            return res
-        if isinstance( res, str ):
-            if not len( res ):
-                return None
-            if "y" in res.lower():
-                return True
-            elif "n" in res.lower():
-                return False
-            else:
-                return None
+        got = input( f"{prompt}: " )
+        if not len( got ):
+            return None
+        elif "y" == got.lower():
+            return True
+        elif "n" == got.lower():
+            return False
         else:
-            try:
-                return bool( res )
-            except Exception as e:
-                print( f"\nBAD USER RESPONSE: {e}\n" )
-                return None
+            return got
 
     
     def prompt_comment_bullets( self, topicStr = "COMMENTS" ) -> dict:
@@ -556,6 +565,24 @@ class GraphicsInspector:
             else:
                 break
         return rtnDct
+    
+
+    def register_resub( self, name ):
+        """ Mark name for resubmit """
+        self.state["resubNames"].append( name )
+        self.state["resubNames"] = list( set( self.state["resubNames"] ) )
+    
+
+    def prompt_resub_bullets( self, rubric ) -> dict:
+        """ Build up a comment in pieces """    
+        while 1:
+            comment = input( f"\nWrite a RESUB concern for this student and then press [Enter]: " )
+            if len( comment ):
+                rubric["Feedback"]["RESUBMIT"].append( comment )
+                self.register_resub( rubric["Name"] )
+            else:
+                break
+        return rubric["Feedback"]["RESUBMIT"]
 
 
     ##### Per-Student Reporting ###########################################
@@ -576,26 +603,59 @@ class GraphicsInspector:
                 return list( self.rubric[ key ]["Flags"] )
             else:
                 return list()
-
-        def handle_rubric_item( key, res = None  ):
+            
+        def p_rubric_flag( key, flag ):
+            """ Does the `key` have this `flag` """
+            return (flag in get_rubric_flags( key ))
+            
+        def get_student_flags():
+            """ Get any flags associated with this rubric student """
             nonlocal rubric, self
-            # rtnDct = dict( rubric["Feedback"] )
+            if ("Flags" in rubric):
+                return list( rubric["Flags"] )
+            else:
+                return list()
+            
+        def p_student_flag( flag ):
+            """ Does the `key` have this `flag` """
+            return (flag in get_student_flags())
+
+        def add_student_flag( nuFlag ):
+            nonlocal rubric, self
+            if ("Flags" not in rubric):
+                rubric["Flags"] = list()
+            rubric["Flags"].append( nuFlag )
+            rubric["Flags"] = list( set( rubric["Flags"] ) )
+
+        def handle_rubric_item( key, res = None ):
+            nonlocal rubric, self
             if key in self.rubric:
-                if "Ask" in get_rubric_flags( key ):
-                    res = self.truthy_user_response( f"Evaluate Category, {key}" )
+                if p_student_flag( "resub" ) and p_rubric_flag( key, "skipOnResub" ):
+                    print( f">>> {self.stdNam}: SKIP {key} on resub! >>>" )
+                    return None
+                prm = f"Evaluate Category, {key}"
+                if res is not None:
+                    prm += f", Got {res}"
+                    if res != self.rubric[ key ]["Correct"]:
+                        if p_rubric_flag( key, "Ask" ):
+                            res = self.truthy_user_response( prm )
+                else:
+                    res = self.truthy_user_response( prm )
                 if res != self.rubric[ key ]["Correct"]:
                     penalty = True
-                    if "Resubmit" in get_rubric_flags( key ):
-                        penalty = self.truthy_user_response( f"\nForce penalty for {key}? (Repeat Offense): " )
+                    if p_rubric_flag( key, "Resubmit" ):
+                        penalty = self.truthy_user_response( f"\nForce penalty for {key}? (Repeat Offense)" )
                         if not penalty:
+                            add_student_flag( "resub" )
+                            self.register_resub( studentStr )
                             if "Remark" in self.rubric[ key ]:
                                 rubric["Feedback"]["RESUBMIT"].append( self.rubric[ key ]["Remark"] )
                             else:
                                 rubric["Feedback"]["RESUBMIT"].append( input( f"\nNO remark for {key}: " ) )
                     if penalty:
                         rubric["Feedback"]["DEDUCTIONS"].append( {
-                            "Remark": f"{self.rubric[ key ]["Remark"]}",
-                            "Penalty": int( self.rubric[ key ]["Penalty"] )
+                            "Remark": f"{self.rubric[ key ]['Remark']}",
+                            "Penalty": int( self.rubric[ key ]['Penalty'] )
                         } )
 
         with open( reportPath, 'w' ) as f:
@@ -662,8 +722,11 @@ class GraphicsInspector:
             runStudent = (fExec is not None) and os.path.isfile( fExec )
             handle_rubric_item( "Compiles Without Errors", runStudent )
             
+            execName = str(fExec).split('/')[-1]
+            handle_rubric_item( "Correct Executable Name", execName )
+
             if runStudent:
-                print( f"Executable NAME: {str(fExec).split('/')[-1]}\n" )
+                print( f"Executable NAME: {execName}\n" )
                 print( f"Running ./{fExec} ..." )
                 os.system( f"./{fExec}" )
             else:
@@ -672,31 +735,38 @@ class GraphicsInspector:
             if not runStudent:
                 out_line( f, f"########## NOTIFY Student! ##########\n\n" )
 
-            out_line( f, f"\n{self.stdNam} eval COMPLETE!\n\n" ) 
+            ##### Manual Eval Categories ###########
+            for cat in ["Nontrivial Geometry", "Intuitive Rotation", "Distort on Resize","Contains GenAI Output",]:
+                handle_rubric_item( cat )
 
             ##### Prompt Final Comments ############
             rubric["Feedback"] = concat_structs( rubric["Feedback"], self.prompt_comment_bullets()   )
             rubric["Feedback"] = concat_structs( rubric["Feedback"], self.prompt_deduction_bullets() )
+            self.prompt_resub_bullets( rubric )
 
             ##### Compute Final Score ############
             print( "##### PASTE THESE COMMENTS #####" )
-            print( TColor.BOLD, end="", flush=True )
+            print( f"{TColor.BOLD}{TColor.OKCYAN}", end="", flush=True )
             if len( rubric["Feedback"]["RESUBMIT"] ):
                 print( "### RESUBMIT ###" )
                 for item in rubric["Feedback"]["RESUBMIT"]:
-                    print( item )
+                    print( f"* {item}" )
             if len( rubric["Feedback"]["COMMENTS"] ):
                 print( "### COMMENTS ###" )
                 for item in rubric["Feedback"]["COMMENTS"]:
-                    print( item )
+                    print( f"* {item}" )
             if len( rubric["Feedback"]["DEDUCTIONS"] ):
                 print( "### DEDUCTIONS ###" )
                 for item in rubric["Feedback"]["DEDUCTIONS"]:
-                    print( item["Remark"] )
+                    print( f"* {item['Remark']}, {item['Penalty']}" )
                     rubric["Student Score"] += item["Penalty"]
             print( TColor.ENDC, end="", flush=True )
             print( "##### END PASTE #####" )
-            out_line( f, f"\n{self.stdNam} final score: {rubric["Student Score"]}!\n\n" ) 
+            out_line( f, f"\n{self.stdNam} final score: {rubric['Student Score']}\n\n" )
+            out_line( f, f"\n{self.stdNam} eval COMPLETE!\n\n" ) 
+
+            # self.store_student_eval( self.stdNam, rubric )
+            self.store_student_eval( studentStr, rubric )
 
         if runStudent:
             shutil.move( reportPath, os.path.join( env_get("_GOOD_DIR"), reportPath ) )
@@ -789,13 +859,16 @@ class GraphicsInspector:
                 except ValueError:
                     pass
 
-                if self.state["lastStudent"] != env_get("_STATE_INT"):
-                    if self.state["lastStudent"] != studentStr:
-                        print( f"{studentStr} was graded!, Skipping ..." )
-                        i += 1
-                        continue
-                    else:
-                        self.state["lastStudent"] = env_get("_STATE_INT")
+                if studentStr in self.state["evals"]:
+                    print( f"{studentStr} was graded!, Skipping ..." )
+                    i += 1
+                    continue
+
+                # if self.state["lastStudent"] != env_get("_STATE_INT"):
+                #     if self.state["lastStudent"] != studentStr:
+                #         print( f"{studentStr} was graded!, Skipping ..." )
+                #         i += 1
+                #         continue
 
                 # Allow search/cancel/quit at the start of each list, Prev/Redo are **disabled** here!
                 stateChange = self.run_menu()
@@ -805,17 +878,15 @@ class GraphicsInspector:
 
                 if self.get_student_prefix( studentStr ) is None:
                     print( f"Student not found!: {self.get_student_prefix( studentStr )} from {studentStr}" )
+                    i += 1
                     continue
                 else:
                     self.store_grading_state()
 
                 self.run_student_report( studentStr, d )
-
-                # if i < (self.N_stdnts-1):
-                #     _ = input( "Press [Enter] to run the next report ..." )
-                
+                self.state["lastStudent"] = studentStr
                 i += 1
-
+            self.store_grading_state()
         except KeyboardInterrupt:
             self.store_grading_state()
     
@@ -825,7 +896,7 @@ class GraphicsInspector:
 if __name__ == "__main__":
     grin = GraphicsInspector( _CONFIG_PATH )
     grin.unzip_all()
-    sleep( 0.5 )
+    sleep( 1.5 )
     grin.run_grading_session()
 
     

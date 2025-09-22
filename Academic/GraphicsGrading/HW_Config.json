@@ -11,22 +11,29 @@
     "_GOOD_NAME" : "hw3",
     "_RULE_NAMES": ["", "hw3", "hw03", "HW3", "HW03"],
     "_RUBRIC_DCT": {
-        "Nontrivial Geometry": {"Penalty": -50, "Flags": ["Ask", "Resubmit"],
+        "comment1": "##### Per-Assignment Requirements #####",
+        "Nontrivial Geometry": {"Correct": true, "Penalty": -50, "Flags": ["Ask", "Resubmit", "skipOnResub"],
                                 "Remark": "Your scene should have original geometry; other than cuboids, cylinders, pyramids, toroids, and cones!"}, 
-        "Intuitive Rotation":  {"Penalty": -10, "Flags": ["Ask", "Resubmit"], "Remark": "Rotation of the scene was missing or unintuitive!"}, 
+        "Intuitive Rotation":  {"Correct": true, "Penalty": -10, "Flags": ["Ask", "Resubmit", "skipOnResub"], "Remark": "Rotation of the scene was missing or unintuitive!"}, 
+        
+        "comment3": "##### Parameterized Requirements #####",
+        "Correct Executable Name": {"Correct": "hw3", "Penalty": -10, "Flags": ["Ask"], "Remark": "Executable NOT named \"hw#\"!"},
 
-        "Executable Depth": {"Correct": 1, "Default": 2, "Penalty": -10, "Flags": ["Ask"], 
-                             "Remark": "ZIP file was too deeply nested! FOLLOW THESE INSTRUCTIONS EXACTLY: https://canvas.colorado.edu/courses/122404/modules/items/6590446"},
-        "Distort on Resize": {"Correct": false, "Default": false, "Penalty": -10, "Flags": ["Ask"], 
+        "comment2": "##### General Assignment Requirements #####",
+        "Distort on Resize": {"Correct": false, "Default": false, "Penalty": -10, "Flags": ["Ask", "skipOnResub"], 
                               "Remark": "View DISTORTS when the window is resized!"},
         "README Present":          {"Correct": true, "Default": false, "Penalty": -10, "Flags": ["Ask"], "Remark": "No README provided!"},
-        "Compiles Without Errors": {"Correct": true , "Default": true , "Penalty": -10, "Flags": ["Ask", "Resubmit"], "Remark": "COMPILER ERROR(S)"}
+        "Compiles Without Errors": {"Correct": true , "Default": true , "Penalty": -10, "Flags": ["Ask", "Resubmit"], "Remark": "COMPILER ERROR(S)"},
+        "Contains GenAI Output": {"Correct": false, "Penalty": -100, "Flags": ["Ask", "Resubmit"], "Remark": "THIS IS YOUR OPPORTUNITY TO DISCLOSE NON-ORIGINAL CODE OBTAINED FROM EXTERNAL SOURCES **WITH PROPER ATTRIBUTION**!"},
+        "Executable Depth": {"Correct": 1, "Default": 2, "Penalty": -10, "Flags": [], 
+                             "Remark": "ZIP file was too deeply nested! FOLLOW THESE INSTRUCTIONS EXACTLY: https://canvas.colorado.edu/courses/122404/modules/items/6590446"}
     },
     "_SCORING_DCT": {
         "Name"          : "STUDENT NAME",
         "Timestamp"     : "YYYY-MM-DD_HH-MM-SS",
         "Possible Score": 100,
         "Student Score" : 100,
+        "Flags"         : [],
         "Feedback"      : {
             "COMMENTS"  : [],
             "DEDUCTIONS": [],
