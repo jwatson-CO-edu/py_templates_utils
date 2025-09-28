@@ -86,10 +86,6 @@ def scrape_source( hwDir, pattern ):
 def make_in_dir_from_rule_with_output( hwDir, rule, f ):
     """ Make the rule in the child directory and report results """
     runStudent = True
-    rtnDct = {
-        "out": None,
-        "err": None,
-    }
 
     try:
         ruleStr = f"make {rule} -C '{hwDir}'"
@@ -105,8 +101,6 @@ def make_in_dir_from_rule_with_output( hwDir, rule, f ):
         out = out.decode()
         err = err.decode()
         errcode = process.returncode
-        rtnDct["out"] = out
-        rtnDct["err"] = err
 
         out_line( f, f"COMPILE Command:  {ruleStr}" )
 
@@ -120,7 +114,7 @@ def make_in_dir_from_rule_with_output( hwDir, rule, f ):
         out_line( f, f"FAILURE, PROCESS ERROR:  {e}" )
         runStudent = False
 
-    return runStudent, rtnDct
+    return runStudent
 
 
 def find_executable( drctry ):
@@ -212,19 +206,20 @@ def angle_between( v1, v2 ):
         return np.arccos( vvDot )
 
 
-def count_comment_lines_and_SLOC( fPath ):
-    """ Return count of commented lines and SLOC  """
+def count_SLOC_comments( fPath ):
+    """ Return code size metrics for this file """
+    Nsloc = 0
+    Ncmnt = 0
+    Nline = 0
     lines = list()
     multi = False
-    Ncmnt = 0
-    Nsloc = 0
-    # WARNING: THERE WILL BE EDGE CASES WITH UNBALANCED COMMENTS THAT I DO NOT CURRENTLY CARE ABOUT
     with open( fPath, 'r' ) as f:
         try:
             lines = f.readlines()
+            Nline = len( lines )
         except Exception as e:
             print( f"\nFAILED READ because {e}\n" )
-            return 0, 0
+            return None, None, None
         for line in lines:
             if ("//" in line) or ("/*" in line) or ("*/" in line):
                 Ncmnt += 1
@@ -232,11 +227,9 @@ def count_comment_lines_and_SLOC( fPath ):
                     multi = True
                 if ("*/" in line):
                     multi = False
-            elif multi:
-                Ncmnt += 1
-            else:
+            elif (not multi) and (len( line.strip() ) >= env_get("_MIN_LIN_CH")):
                 Nsloc += 1
-    return Ncmnt, Nsloc
+    return Nsloc, Ncmnt, Nline
 
 
 def attempt_normal_scan( fPath, fOut ):
@@ -458,6 +451,18 @@ class GraphicsInspector:
         self.template : dict = env_get("_SCORING_DCT")
 
 
+    def shutdown( self ):
+        """ Tasks to run on exit """
+        self.store_grading_state()
+        sleep( 1.5 )
+        print( f"\n\n########## Set a new Due Date for the Following Students! ##########\n" )
+        for resub in self.state["resubNames"]:
+            print( resub )
+        print()
+        with open( "99_Resubs.txt", 'w' ) as f:
+            f.writelines( [f"{item}\n\n" for item in self.state["resubNames"]] )
+        sleep( 1.5 )
+
 
     ##### File Operations #################################################
     
@@ -490,7 +495,8 @@ class GraphicsInspector:
 
     ##### Grading Helpers #################################################
     idx0 = 0
-    idx1 = 1
+    # idx1 = 1
+    idx1 = -1
 
     def get_student_prefix( self, query ):
         """ Get a prefix that orders the folders """
@@ -564,9 +570,9 @@ class GraphicsInspector:
         got = input( f"{prompt}: " )
         if not len( got ):
             return None
-        elif "y" == got.lower():
+        elif "y" == got.strip().lower():
             return True
-        elif "n" == got.lower():
+        elif "n" == got.strip().lower():
             return False
         else:
             return got
@@ -620,7 +626,7 @@ class GraphicsInspector:
 
     ##### Per-Student Reporting ###########################################
 
-    def run_student_report( self, studentStr, studentDir ):
+    def run_student_report( self, studentStr : str, studentDir : str, carryover : dict = None ):
         """ Get info on student submission and generate a report about it """
         reportPath  = studentStr + ".txt"
         runStudent  = True
@@ -628,6 +634,8 @@ class GraphicsInspector:
         self.stdNam = self.get_student_name( studentStr )
         rubric["Name"     ] = self.stdNam 
         rubric["Timestamp"] = self.get_timestamp() 
+        if carryover is not None:
+            rubric = concat_structs( rubric, carryover )
 
         def get_rubric_flags( key ):
             """ Get any flags associated with this rubric `key` """
@@ -671,7 +679,8 @@ class GraphicsInspector:
                     prm += f", Got {res}"
                     if res != self.rubric[ key ]["Correct"]:
                         if p_rubric_flag( key, "Ask" ):
-                            res = self.truthy_user_response( prm )
+                            ans = self.truthy_user_response( prm )
+                            res = ans if (ans is not None) else res
                 else:
                     res = self.truthy_user_response( prm )
                 if res != self.rubric[ key ]["Correct"]:
@@ -709,15 +718,11 @@ class GraphicsInspector:
             
             ##### Erase Previous Out Files #######
             make_clean( hwDir )
-            ##### Fetch Source Files #############
-            srcPaths = source_and_header_full_paths( hwDir )
-
-            
-
 
             ##### Zip File Depth #################
             if "Normal Scan" in self.rubric:
                 out_line( f, f"##### Normal Scan for: {studentStr} #####\n" )
+                srcPaths = source_and_header_full_paths( hwDir )
                 for sPath in srcPaths:
                     out_line( f, f"\n### Normal Scan for: {str(sPath).split('/')[-1]} ###\n" )
                     attempt_normal_scan( sPath, f )
@@ -744,18 +749,11 @@ class GraphicsInspector:
                     print( f"No prohibited text found!\n" )
 
             ##### Attempt Compilation ############
-            compResOut = None 
             if runStudent:
                 if env_get("_ALWAYS_PIE"):
                     modify_makefile_to_disable_PIE( hwDir )
-                firstRule = True
-                
                 for rule in env_get("_RULE_NAMES"):
-                    if firstRule:
-                        runStudent, compResOut = make_in_dir_from_rule_with_output( hwDir, rule, f )
-                        firstRule = False
-                    else:
-                        runStudent, _ = make_in_dir_from_rule_with_output( hwDir, rule, f )
+                    runStudent = make_in_dir_from_rule_with_output( hwDir, rule, f )
                     if runStudent:
                         break
             if runStudent:
@@ -779,33 +777,38 @@ class GraphicsInspector:
             if not runStudent:
                 out_line( f, f"########## NOTIFY Student! ##########\n\n" )
 
-            ##### Quick Source Inspection ########
-            out_line( f, f"##### Source Inspection for: {studentStr} #####\n" )
-            cmnt_T = sloc_T = 0
-            slcMax = 0
-            pthMax = None
+            ##### Comment + AI Checks ############
+            out_line( f, f"##### Source Check for: {studentStr} #####\n" )
+            srcPaths = source_and_header_full_paths( hwDir )
+            NcomTot  = 0
+            NlinTot  = 0
+            NlinMax  = 0
+            pathMax  = None
             for sPath in srcPaths:
-                cmnt_i, sloc_i = count_comment_lines_and_SLOC( sPath )
-                cmnt_T += cmnt_i
-                sloc_T += sloc_i
-                if (sloc_i > slcMax):
-                    slcMax = sloc_i
-                    pthMax = sPath
-            cmntFrac = cmnt_T/(cmnt_T+sloc_T)
-            if (cmntFrac < env_get("_COMNT_FRAC")):
-                print( f"{TColor.WARNING}", end="", flush=True )
-            print( f"Source content is {cmntFrac} comments!{TColor.ENDC}" )
-            if pthMax is not None:
-                os.system( f"{env_get('_TXT_READER')} {pthMax}" )
+                Nsloc, Ncmnt, Nline = count_SLOC_comments( sPath )
+                NcomTot += Ncmnt
+                NlinTot += Nline
+                if Nsloc > NlinMax:
+                    NlinMax = Nsloc
+                    pathMax = sPath
+            if pathMax is not None:
+                os.system( f"{env_get('_TXT_READER')} {pathMax}" )
+            else:
+                raise ValueError( f"NO SOURCE found for {studentStr}" )
 
-            ##### Manual Eval Categories ###########
-            for cat in ["Nontrivial Geometry", "Intuitive Rotation", "Distort on Resize","Contains GenAI Output",]:
+            ##### Per-Assignment Eval Categories #
+            for cat in [item for item in self.rubric.keys() if item[:2] == "PA"]:
                 handle_rubric_item( cat )
+            handle_rubric_item( "Contains GenAI Output" )
 
-            ##### Prompt Final Comments ############
+            ##### Prompt Final Comments ##########
             rubric["Feedback"] = concat_structs( rubric["Feedback"], self.prompt_comment_bullets()   )
             rubric["Feedback"] = concat_structs( rubric["Feedback"], self.prompt_deduction_bullets() )
             self.prompt_resub_bullets( rubric )
+
+            ##### Nudge Secretive Students #######
+            if ((NcomTot / NlinTot) < env_get("_L_COM_FRAC")):
+                rubric["Feedback"]["COMMENTS"].append( "For future assignments, if you could add some comments to explain your approach in broad terms, it would help us a great deal." )
 
             ##### Compute Final Score ############
             print( "##### PASTE THESE COMMENTS #####" )
@@ -824,20 +827,9 @@ class GraphicsInspector:
                     print( f"* {item['Remark']}, {item['Penalty']}" )
                     rubric["Student Score"] += item["Penalty"]
             print( TColor.ENDC, end="", flush=True )
-            print( "##### END PASTE #####\n" )
-
-            print( f"##### PASTE COMPILER OUTPUT (IF HELPFUL) #####" )
-            print( f"{TColor.BOLD}{TColor.OKBLUE}### OUTPUT ###" )
-            print( compResOut['out'] )
-            print( f"{TColor.ENDC}{TColor.BOLD}{TColor.FAIL}### ERRORS ###" )
-            print( compResOut['err'] )
-            print( f"{TColor.ENDC}##### END PASTE #####\n" )
-
+            print( "##### END PASTE #####" )
             out_line( f, f"\n{self.stdNam} final score: {rubric['Student Score']}\n\n" )
             out_line( f, f"\n{self.stdNam} eval COMPLETE!\n\n" ) 
-
-            
-
 
             # self.store_student_eval( self.stdNam, rubric )
             self.store_student_eval( studentStr, rubric )
@@ -863,7 +855,7 @@ class GraphicsInspector:
         if not len( usrCmd ):
             rtnState['iDelta'] = 1
         # GOTO Student in Current List #
-        elif 'S:' in usrCmd:
+        elif ('S' in usrCmd.upper()) and (':' in usrCmd):
             searchStr = usrCmd.split(':')[-1].strip().lower()
             print( f"Search for {searchStr} ..." )
             ranking = self.search_ranked_student_index_in_list( searchStr, Nrank = env_get("_N_SEARCH_R") )
@@ -916,39 +908,46 @@ class GraphicsInspector:
         """ Find it, Compile it, Run it, Look at it! """
         i = 0
         N = len( self.subdirs )
+        print( self.subdirs )
         try:
             while i < N:
                 d          = self.subdirs[i]
                 studentStr = str( d.split('/')[-1] )
 
                 if studentStr[:2] == "__":
+                    print( f"Admin Dir: {studentStr}" )
                     i += 1
                     continue
 
                 try:
                     _ = int( studentStr[:2] )
                     print( f"Admin Dir: {studentStr}" )
+                    sleep( 0.25 )
                     i += 1
                     continue
                 except ValueError:
                     pass
 
+                prevDeductions = None
                 if studentStr in self.state["evals"]:
-                    print( f"{studentStr} was graded!, Skipping ..." )
-                    i += 1
-                    continue
-
-                # if self.state["lastStudent"] != env_get("_STATE_INT"):
-                #     if self.state["lastStudent"] != studentStr:
-                #         print( f"{studentStr} was graded!, Skipping ..." )
-                #         i += 1
-                #         continue
+                    if not len( self.state["evals"][ studentStr ]["Feedback"]["RESUBMIT"] ):
+                        print( f"{studentStr} was graded!, Skipping ..." )
+                        i += 1
+                        continue
+                    elif len( self.state["evals"][ studentStr ]["Feedback"]["DEDUCTIONS"] ):
+                        prevNotes = list()
+                        for deduct in self.state["evals"][ studentStr ]["Feedback"]["DEDUCTIONS"]:
+                            parts = f"{deduct}".split(',')
+                            nuStr = parts[0] + " (Prev. Submission, Cumulative), " + (",".join( parts[1:] ) if (len( parts ) > 1) else "")
+                            prevNotes.append( nuStr )
+                        prevDeductions = { "Feedback" : { "DEDUCTIONS" : prevNotes } }
 
                 # Allow search/cancel/quit at the start of each list, Prev/Redo are **disabled** here!
                 stateChange = self.run_menu()
                 # loopAction  = stateChange['loop']
                 if stateChange['index'] >= 0:
                     i = stateChange['index']
+                    continue
 
                 if self.get_student_prefix( studentStr ) is None:
                     print( f"Student not found!: {self.get_student_prefix( studentStr )} from {studentStr}" )
@@ -957,12 +956,12 @@ class GraphicsInspector:
                 else:
                     self.store_grading_state()
 
-                self.run_student_report( studentStr, d )
+                self.run_student_report( studentStr, d, carryover = prevDeductions )
                 self.state["lastStudent"] = studentStr
                 i += 1
             self.store_grading_state()
         except KeyboardInterrupt:
-            self.store_grading_state()
+            self.shutdown()
     
 
 
@@ -972,6 +971,8 @@ if __name__ == "__main__":
     grin.unzip_all()
     sleep( 1.5 )
     grin.run_grading_session()
+    sleep( 1.5 )
+    grin.shutdown()
 
     
 
