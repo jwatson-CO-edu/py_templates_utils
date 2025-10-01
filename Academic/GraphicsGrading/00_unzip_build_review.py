@@ -7,7 +7,7 @@ from time import sleep
 from collections import deque
 from copy import deepcopy
 from datetime import date, datetime
-from ast import literal_eval
+from pprint import pprint
 ### Special ###
 import numpy as np
 ### Local ###
@@ -440,15 +440,9 @@ class GraphicsInspector:
         except Exception as e:
             self.state = dict()
             self.sPath = env_get("_STATE_PTH")
-        self.subdirs = [ f.path for f in os.scandir() if f.is_dir() ]
-        self.subdirs.sort()
-        self.reports = list()
-        self.get_ordered_students( env_get("_LIST_PATH") )
-        self.N_stdnts = len( self.students )
-        os.makedirs( env_get("_BAD_DIR" ), exist_ok = True )
-        os.makedirs( env_get("_GOOD_DIR"), exist_ok = True )
-        self.rubric   : dict = env_get("_RUBRIC_DCT" )
-        self.template : dict = env_get("_SCORING_DCT")
+        
+
+    
 
 
     def shutdown( self ):
@@ -461,7 +455,6 @@ class GraphicsInspector:
         print()
         with open( "99_Resubs.txt", 'w' ) as f:
             f.writelines( [f"{item}\n\n" for item in self.state["resubNames"]] )
-        sleep( 1.5 )
 
 
     ##### File Operations #################################################
@@ -493,6 +486,21 @@ class GraphicsInspector:
         print( f"Expanded {count} student submissions!" )
 
 
+    def startup( self ):
+        """ Tasks to run before grading """
+        self.get_ordered_students( env_get("_LIST_PATH") )
+        grin.unzip_all()
+        sleep( 1.5 )
+        self.subdirs = [ f.path for f in os.scandir() if f.is_dir() ]
+        self.subdirs.sort()
+        self.reports = list()
+        self.N_stdnts = len( self.students )
+        os.makedirs( env_get("_BAD_DIR" ), exist_ok = True )
+        os.makedirs( env_get("_GOOD_DIR"), exist_ok = True )
+        self.rubric   : dict = env_get("_RUBRIC_DCT" )
+        self.template : dict = env_get("_SCORING_DCT")
+
+
     ##### Grading Helpers #################################################
     idx0 = 0
     # idx1 = 1
@@ -504,11 +512,18 @@ class GraphicsInspector:
             if (stdnt[GraphicsInspector.idx0] in query) and (stdnt[GraphicsInspector.idx1] in query):
                 return f"{stdnt[GraphicsInspector.idx1]}_{stdnt[GraphicsInspector.idx0]}_"
         return None
+    
+
+    def get_student_dir( self, query ):
+        """ Get the folder from the name """
+        for i, folder in enumerate( self.subdirs ):
+            if self.get_student_prefix( query ) in folder:
+                return folder, i
+        return None, None
 
 
     def get_student_name( self, query ):
         """ Get a prefix that orders the folders """
-        
         for stdnt in self.students:
             if (stdnt[GraphicsInspector.idx0] in query) and (stdnt[GraphicsInspector.idx1] in query):
                 first = f"{stdnt[GraphicsInspector.idx0][0].upper()}{stdnt[GraphicsInspector.idx0][1:]}"
@@ -701,7 +716,7 @@ class GraphicsInspector:
                         } )
 
         with open( reportPath, 'w' ) as f:
-            out_line( f, f"########## Student: {studentStr} ##########\n\n" )
+            out_line( f, f"########## Student: {self.stdNam} ##########\n\n" )
             out_line( f, f"Hello {self.stdNam}!\nTake note of the compilation errors shown below! (You can ignore make rules not in your Makefile.)\n\n" )
             
             ##### Zip File Depth ################# 
@@ -721,7 +736,7 @@ class GraphicsInspector:
 
             ##### Zip File Depth #################
             if "Normal Scan" in self.rubric:
-                out_line( f, f"##### Normal Scan for: {studentStr} #####\n" )
+                out_line( f, f"##### Normal Scan for: {self.stdNam} #####\n" )
                 srcPaths = source_and_header_full_paths( hwDir )
                 for sPath in srcPaths:
                     out_line( f, f"\n### Normal Scan for: {str(sPath).split('/')[-1]} ###\n" )
@@ -778,7 +793,7 @@ class GraphicsInspector:
                 out_line( f, f"########## NOTIFY Student! ##########\n\n" )
 
             ##### Comment + AI Checks ############
-            out_line( f, f"##### Source Check for: {studentStr} #####\n" )
+            out_line( f, f"##### Source Check for: {self.stdNam} #####\n" )
             srcPaths = source_and_header_full_paths( hwDir )
             NcomTot  = 0
             NlinTot  = 0
@@ -855,8 +870,13 @@ class GraphicsInspector:
         if not len( usrCmd ):
             rtnState['iDelta'] = 1
         # GOTO Student in Current List #
-        elif ('S' in usrCmd.upper()) and (':' in usrCmd):
-            searchStr = usrCmd.split(':')[-1].strip().lower()
+        elif ('S' in usrCmd.upper()):
+            if (':' in usrCmd):
+                searchStr = usrCmd.split(':')[-1].strip().lower()
+            elif (',' in usrCmd):
+                searchStr = usrCmd.split(',')[-1].strip().lower()
+            else:
+                searchStr = usrCmd.split(' ')[-1].strip().lower()
             print( f"Search for {searchStr} ..." )
             ranking = self.search_ranked_student_index_in_list( searchStr, Nrank = env_get("_N_SEARCH_R") )
             invalid = True
@@ -906,24 +926,30 @@ class GraphicsInspector:
 
     def run_grading_session( self ):
         """ Find it, Compile it, Run it, Look at it! """
-        i = 0
-        N = len( self.subdirs )
-        print( self.subdirs )
+        ii = 0
+        # N  = len( self.subdirs )
+        N  = len( self.students )
+        # print( self.subdirs )
         try:
-            while i < N:
-                d          = self.subdirs[i]
+            while ii < N:
+                studentNam = self.students[ii]
+                d, _       = self.get_student_dir( studentNam )
+                if d is None:
+                    print( f"NO directory for {studentNam}!" )
+                    ii += 1
+                    continue
                 studentStr = str( d.split('/')[-1] )
 
                 if studentStr[:2] == "__":
                     print( f"Admin Dir: {studentStr}" )
-                    i += 1
+                    ii += 1
                     continue
 
                 try:
                     _ = int( studentStr[:2] )
                     print( f"Admin Dir: {studentStr}" )
                     sleep( 0.25 )
-                    i += 1
+                    ii += 1
                     continue
                 except ValueError:
                     pass
@@ -932,7 +958,7 @@ class GraphicsInspector:
                 if studentStr in self.state["evals"]:
                     if not len( self.state["evals"][ studentStr ]["Feedback"]["RESUBMIT"] ):
                         print( f"{studentStr} was graded!, Skipping ..." )
-                        i += 1
+                        ii += 1
                         continue
                     elif len( self.state["evals"][ studentStr ]["Feedback"]["DEDUCTIONS"] ):
                         prevNotes = list()
@@ -941,24 +967,28 @@ class GraphicsInspector:
                             nuStr = parts[0] + " (Prev. Submission, Cumulative), " + (",".join( parts[1:] ) if (len( parts ) > 1) else "")
                             prevNotes.append( nuStr )
                         prevDeductions = { "Feedback" : { "DEDUCTIONS" : prevNotes } }
+                    else:
+                        print( "\n\n" )
+                        pprint( self.state["evals"][ studentStr ] )
+                        raise ValueError( f"BAD GRADING STATE FOR {studentNam}" )
 
                 # Allow search/cancel/quit at the start of each list, Prev/Redo are **disabled** here!
                 stateChange = self.run_menu()
                 # loopAction  = stateChange['loop']
                 if stateChange['index'] >= 0:
-                    i = stateChange['index']
+                    ii = stateChange['index']
                     continue
 
                 if self.get_student_prefix( studentStr ) is None:
                     print( f"Student not found!: {self.get_student_prefix( studentStr )} from {studentStr}" )
-                    i += 1
+                    ii += 1
                     continue
                 else:
                     self.store_grading_state()
 
                 self.run_student_report( studentStr, d, carryover = prevDeductions )
-                self.state["lastStudent"] = studentStr
-                i += 1
+                self.state["lastStudent"] = studentNam
+                ii += 1
             self.store_grading_state()
         except KeyboardInterrupt:
             self.shutdown()
@@ -968,8 +998,7 @@ class GraphicsInspector:
 ########## MAIN ####################################################################################
 if __name__ == "__main__":
     grin = GraphicsInspector( _CONFIG_PATH )
-    grin.unzip_all()
-    sleep( 1.5 )
+    grin.startup()
     grin.run_grading_session()
     sleep( 1.5 )
     grin.shutdown()
