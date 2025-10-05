@@ -9,25 +9,29 @@
     "_L_COM_FRAC":  0.025,
     "_ALWAYS_PIE":  false ,
     "_TXT_READER":  "xed",
-    "_BAD_PATTRN":  "CSCIx229",
-    "_GOOD_NAME" : "hw4",
-    "_RULE_NAMES": ["", "hw4", "hw04", "HW4", "HW04"],
+    "_BAD_PATTRN":  "glut",
+    "_GOOD_NAME" : "hw5",
+    "_RULE_NAMES": ["", "hw5", "hw05", "HW5", "HW05", "lighting", "Lighting"],
     "_RUBRIC_DCT": {
         "comment1": "##### Per-Assignment Requirements #####",
+        "PA: Visible Light Source":  {"Correct": true, "Penalty": -20, "Flags": ["Ask", "Resubmit"], "Remark": "A visible, orbiting light source is MISSING!"},
+        "Normal Scan":  {"Correct": true, "Penalty": -20, "Flags": ["Ask", "Resubmit"], "Remark": "Incorrect normals!"},
+        "PA: One-Sided Flat Geo":  {"Correct": false, "Penalty": -5, "Flags": ["Ask", "Resubmit"], "Remark": "Flat geometry must be DOUBLE-SIDED with correct normals for EACH side!"},
         "PA: Nontrivial Geometry": {"Correct": true, "Penalty": -50, "Flags": ["Ask", "Resubmit", "skipOnResub"],
-                                "Remark": "Your scene should have original geometry; other than cuboids, cylinders, pyramids, toroids, and cones!"}, 
-        "PA: Orthogonal View":  {"Correct": true, "Penalty": -20, "Flags": ["Ask", "Resubmit", "skipOnResub"], "Remark": "Orthogonal View is MISSING!"}, 
-        "PA: Perspective View":  {"Correct": true, "Penalty": -20, "Flags": ["Ask", "Resubmit", "skipOnResub"], "Remark": "Perspective View is MISSING!"}, 
-        "PA: FPV":  {"Correct": true, "Penalty": -50, "Flags": ["Ask", "Resubmit", "skipOnResub"], "Remark": "First-Person View is MISSING or has PROBLEMS!"},
+                                    "Remark": "Your scene should have original geometry; other than cuboids, cylinders, pyramids, toroids, and cones!"}, 
+        "PA: Orthogonal View":  {"Correct": true, "Penalty": -10, "Flags": ["Ask", "Resubmit", "skipOnResub"], "Remark": "Orthogonal View is MISSING!"}, 
+        "PA: Perspective View":  {"Correct": true, "Penalty": -10, "Flags": ["Ask", "Resubmit", "skipOnResub"], "Remark": "Perspective View is MISSING!"}, 
+        "PA: FPV":  {"Correct": true, "Penalty": -10, "Flags": ["Ask", "Resubmit", "skipOnResub"], "Remark": "First-Person View is MISSING or has PROBLEMS!"},
         
         "comment3": "##### Parameterized Requirements #####",
-        "Correct Executable Name": {"Correct": "hw4", "Penalty": -10, "Flags": ["Ask"], "Remark": "Executable NOT named \"hw#\"!"},
+        "Correct Executable Name": {"Correct": "hw5", "Penalty": -10, "Flags": ["Ask"], "Remark": "Executable NOT named \"hw#\"!"},
 
         "comment2": "##### General Assignment Requirements #####",
-        "Distort on Resize": {"Correct": false, "Default": false, "Penalty": -10, "Flags": ["Ask", "skipOnResub"], 
+        "Distort on Resize": {"Correct": false, "Default": false, "Penalty": -10, "Flags": ["Ask", "Resubmit"], 
                               "Remark": "View DISTORTS when the window is resized!"},
         "README Present":          {"Correct": true, "Default": false, "Penalty": -10, "Flags": ["Ask"], "Remark": "No README provided!"},
         "Compiles Without Errors": {"Correct": true , "Default": true , "Penalty": -10, "Flags": ["Ask", "Resubmit"], "Remark": "COMPILER ERROR(S)"},
+        "Name in Window Title": {"Correct": true , "Default": true , "Penalty": -10, "Flags": ["Ask", "Resubmit"], "Remark": "FULL name MUST be in the window title!"},
         "Contains GenAI Output": {"Correct": false, "Penalty": -100, "Flags": ["Ask", "Resubmit"], "Remark": "THIS IS YOUR OPPORTUNITY TO DISCLOSE NON-ORIGINAL CODE OBTAINED FROM EXTERNAL SOURCES **WITH PROPER ATTRIBUTION**!"},
         "Executable Depth": {"Correct": 1, "Default": 2, "Penalty": -10, "Flags": [], 
                              "Remark": "ZIP file was too deeply nested! FOLLOW THESE INSTRUCTIONS EXACTLY: https://canvas.colorado.edu/courses/122404/modules/items/6590446"}
@@ -41,7 +45,8 @@
         "Feedback"      : {
             "COMMENTS"  : [],
             "DEDUCTIONS": [],
-            "RESUBMIT"  : []
+            "RESUBMIT"  : [],
+            "GEOMETRY"  : []
         }
         
     }

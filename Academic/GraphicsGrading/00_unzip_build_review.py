@@ -17,6 +17,7 @@ from utils import read_config_into_env, env_get, out_line
 _CONFIG_PATH = 'HW_Config.json'
 
 
+
 ########## HELPER FUNCTIONS ########################################################################
 
 def dig_for_Makefile( drctry ):
@@ -232,7 +233,7 @@ def count_SLOC_comments( fPath ):
     return Nsloc, Ncmnt, Nline
 
 
-def attempt_normal_scan( fPath, fOut ):
+def attempt_normal_scan( fPath ):
     """ Attempt to determine if normals are correctly formed """
     f_NormRd = False
     f_3vrtcs = False
@@ -240,9 +241,10 @@ def attempt_normal_scan( fPath, fOut ):
     pts_i    = [None,None,None,]
     ptDex    = 0
     accept   = np.radians( 10.0 )
-    nFound   = False
     glNorm   = False
     nonUnt   = False
+    nFound   = False
+    feedback = ""
 
     print()
 
@@ -257,12 +259,14 @@ def attempt_normal_scan( fPath, fOut ):
                 if "GL_NORMALIZE" in str( line ):
                     glNorm = True
                 lnTkns = tokenize( line )
+                if ("GL_NORMAL_ARRAY" in lnTkns):
+                    nFound = True
                 if ("glNormal3d" in lnTkns) or ("glNormal3f" in lnTkns):
                     nFound = True
                     if f_NormRd and (not f_3vrtcs):
-                        print( f"\tUNFINISHED triangle near line {j+1}" )
+                        feedback += f"\tUNFINISHED triangle near line {j+1}"
                     elif f_NormRd and (ptDex > 3):
-                        print( f"\tSURPLUS points near line {j+1}" )
+                        feedback += f"\tSURPLUS points near line {j+1}"
                     f_NormRd = True
                     f_3vrtcs = False
                     nrm_i    = np.array( filter_float_tokens( lnTkns ) )
@@ -286,15 +290,16 @@ def attempt_normal_scan( fPath, fOut ):
                     print( nrm_c )
                     err_i    = angle_between( nrm_i, nrm_c )
                     if err_i > accept:
-                        out_line( fOut, f"\n\tBAD NORMAL before line {j+1}, Err = {err_i:.3f} rad, {nrm_i} -vs- {nrm_c}" )
+                        feedback += f"\n\tBAD NORMAL before line {j+1}, Err = {err_i:.3f} rad, {nrm_i} -vs- {nrm_c}" 
                     else:
                         print( '.', end='', flush=True )
             except Exception as e:
-                print( f"~Line {j+1}: Norm Parser Fault, {e}" )
+                feedback += f"~Line {j+1}: Norm Parser Fault, {e}"
     if nonUnt and (not glNorm):
-        out_line( fOut, f"\n\tNon-unit normals *without* GL_NORMALIZE enabled!" )
-    print()
-    return nFound
+        feedback += f"\n\tNon-unit normals *without* GL_NORMALIZE enabled!"
+    if not nFound:
+        return "No Normals"
+    return feedback
 
 
 def concat_structs( op1, op2 ):
@@ -737,10 +742,18 @@ class GraphicsInspector:
             ##### Zip File Depth #################
             if "Normal Scan" in self.rubric:
                 out_line( f, f"##### Normal Scan for: {self.stdNam} #####\n" )
-                srcPaths = source_and_header_full_paths( hwDir )
+                srcPaths = [path for path in source_and_header_full_paths( hwDir ) if ((".h" not in path) and (".hpp" not in path))] 
+                noNormal = True
                 for sPath in srcPaths:
-                    out_line( f, f"\n### Normal Scan for: {str(sPath).split('/')[-1]} ###\n" )
-                    attempt_normal_scan( sPath, f )
+                    normOut = f"\n### Normal Scan for: {str(sPath).split('/')[-1]} ###\n"
+                    pathOut = attempt_normal_scan( sPath )
+                    if (pathOut != "No Normals"):
+                        noNormal = False
+                    if len( pathOut ) and (pathOut != "No Normals"):
+                        normOut += pathOut
+                        rubric["Feedback"]["GEOMETRY"].append( normOut )
+                if noNormal:
+                    rubric["Feedback"]["GEOMETRY"].append( ">>>>>! NO NORMAL DATA: LIGHTING NOT ATTEMPTED !<<<<<" )
                 handle_rubric_item( "Normal Scan" )
 
             ##### Find and Display README ########
@@ -814,7 +827,8 @@ class GraphicsInspector:
             ##### Per-Assignment Eval Categories #
             for cat in [item for item in self.rubric.keys() if item[:2] == "PA"]:
                 handle_rubric_item( cat )
-            handle_rubric_item( "Contains GenAI Output" )
+            for cat in ["Contains GenAI Output", "Name in Window Title", "Distort on Resize",]:
+                handle_rubric_item( cat )
 
             ##### Prompt Final Comments ##########
             rubric["Feedback"] = concat_structs( rubric["Feedback"], self.prompt_comment_bullets()   )
@@ -829,18 +843,22 @@ class GraphicsInspector:
             print( "##### PASTE THESE COMMENTS #####" )
             print( f"{TColor.BOLD}{TColor.OKCYAN}", end="", flush=True )
             if len( rubric["Feedback"]["RESUBMIT"] ):
-                print( "### RESUBMIT ###" )
+                print( "##### RESUBMIT #####" )
                 for item in rubric["Feedback"]["RESUBMIT"]:
                     print( f"* {item}" )
             if len( rubric["Feedback"]["COMMENTS"] ):
-                print( "### COMMENTS ###" )
+                print( "##### COMMENTS #####" )
                 for item in rubric["Feedback"]["COMMENTS"]:
                     print( f"* {item}" )
             if len( rubric["Feedback"]["DEDUCTIONS"] ):
-                print( "### DEDUCTIONS ###" )
+                print( "##### DEDUCTIONS #####" )
                 for item in rubric["Feedback"]["DEDUCTIONS"]:
                     print( f"* {item['Remark']}, {item['Penalty']}" )
                     rubric["Student Score"] += item["Penalty"]
+            if len( rubric["Feedback"]["GEOMETRY"] ):
+                print( "##### GEOMETRY #####" )
+                for item in rubric["Feedback"]["GEOMETRY"]:
+                    print( f"{item}" )
             print( TColor.ENDC, end="", flush=True )
             print( "##### END PASTE #####" )
             out_line( f, f"\n{self.stdNam} final score: {rubric['Student Score']}\n\n" )
@@ -860,10 +878,11 @@ class GraphicsInspector:
         usrCmd = input( "Press [Enter] to evaluate the next student: " ).upper()
         print()
         rtnState = {
-            'loop'    : "",
-            'iDelta'  :  0 ,
-            'index'   : -1 ,
-            'reverse' : False,
+            'loop'   : "",
+            'iDelta' :  0 ,
+            'index'  : -1 ,
+            'reverse': False,
+            'flags'  : [],
         }
         ## Handle user input ##
         # Normal List Progression #
@@ -920,16 +939,16 @@ class GraphicsInspector:
         elif 'E' in usrCmd:
             print( "!///! END LIST !///!" )
             rtnState['loop'] = "break"
-
+        # Accept Previous Data #
+        elif ('A' in usrCmd) or ('ACCEPT' in usrCmd):
+            rtnState['flags'].append( 'acceptPrev' )
         return rtnState
 
 
     def run_grading_session( self ):
         """ Find it, Compile it, Run it, Look at it! """
         ii = 0
-        # N  = len( self.subdirs )
         N  = len( self.students )
-        # print( self.subdirs )
         try:
             while ii < N:
                 studentNam = self.students[ii]
@@ -960,31 +979,38 @@ class GraphicsInspector:
                         print( f"{studentStr} was graded!, Skipping ..." )
                         ii += 1
                         continue
-                    elif len( self.state["evals"][ studentStr ]["Feedback"]["DEDUCTIONS"] ):
-                        prevNotes = list()
-                        for deduct in self.state["evals"][ studentStr ]["Feedback"]["DEDUCTIONS"]:
-                            parts = f"{deduct}".split(',')
-                            nuStr = parts[0] + " (Prev. Submission, Cumulative), " + (",".join( parts[1:] ) if (len( parts ) > 1) else "")
-                            prevNotes.append( nuStr )
-                        prevDeductions = { "Feedback" : { "DEDUCTIONS" : prevNotes } }
                     else:
-                        print( "\n\n" )
-                        pprint( self.state["evals"][ studentStr ] )
-                        raise ValueError( f"BAD GRADING STATE FOR {studentNam}" )
+                        print( f"\nGrade RESUBMIT for {self.stdNam}\n" )
+                        if len( self.state["evals"][ studentStr ]["Feedback"]["DEDUCTIONS"] ):
+                            prevNotes = list()
+                            for deduct in self.state["evals"][ studentStr ]["Feedback"]["DEDUCTIONS"]:
+                                parts = f"{deduct}".split(',')
+                                nuStr = parts[0] + " (Prev. Submission, Cumulative), " + (",".join( parts[1:] ) if (len( parts ) > 1) else "")
+                                prevNotes.append( nuStr )
+                            prevDeductions = { "Feedback" : { "DEDUCTIONS" : prevNotes } }
 
-                # Allow search/cancel/quit at the start of each list, Prev/Redo are **disabled** here!
+                # Allow search/cancel/quit at the start of each list
+                print( f"\nAbout to evaluate {studentNam} ... \n" )
                 stateChange = self.run_menu()
-                # loopAction  = stateChange['loop']
+                
+                # Handle Student Search --> Index Jump #
                 if stateChange['index'] >= 0:
                     ii = stateChange['index']
                     continue
-
+                
+                # Handle Missing Submission #
                 if self.get_student_prefix( studentStr ) is None:
                     print( f"Student not found!: {self.get_student_prefix( studentStr )} from {studentStr}" )
                     ii += 1
                     continue
+                # Else: Save Current State #
                 else:
                     self.store_grading_state()
+
+                if 'acceptPrev' in stateChange['flags']:
+                    print( f"Accept current state for {self.stdNam}" )
+                    ii += 1
+                    continue
 
                 self.run_student_report( studentStr, d, carryover = prevDeductions )
                 self.state["lastStudent"] = studentNam
