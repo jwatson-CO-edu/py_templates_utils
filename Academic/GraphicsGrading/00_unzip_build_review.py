@@ -18,6 +18,36 @@ _CONFIG_PATH = 'HW_Config.json'
 
 
 
+########## STRING ANALYSIS #########################################################################
+
+def levenshtein_search_dist( s1 : str, s2 : str ) -> int:
+    """ Get the edit distance between two strings """
+    # Author: Salvador Dali, https://stackoverflow.com/a/32558749
+    # 1. Trivial cases: One string is empty
+    if not len(s1):
+        return len(s2)
+    if not len(s2):
+        return len(s1)
+    # 2. This algo assumes second string is at least as long as the first
+    if len(s1) > len(s2):
+        s1, s2 = s2, s1
+    if s1 in s2:
+        return 0
+    # 3. Compute distance and return
+    distances  = range(len(s1) + 1)
+    distances_ = None
+    for i2, c2 in enumerate(s2):
+        distances_ = deque()
+        distances_.append( i2+1 )
+        for i1, c1 in enumerate(s1):
+            if c1 == c2:
+                distances_.append(distances[i1])
+            else:
+                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
+    return distances_.pop() + abs(len(s1)-len(s2)) # HACK
+
+
+
 ########## HELPER FUNCTIONS ########################################################################
 
 def dig_for_Makefile( drctry ):
@@ -329,6 +359,57 @@ def concat_structs( op1, op2 ):
         return None
 
 
+def find_processes( q : str ) -> list[str]:
+    """ `grep` all running processes for `q` """
+    ruleStr = f"ps ax | grep {q}"
+    process = subprocess.Popen( ruleStr, 
+                                shell  = True,
+                                stdout = subprocess.PIPE, 
+                                stderr = subprocess.PIPE )
+    # wait for the process to terminate
+    out, err = process.communicate()
+    out = out.decode()
+    err = err.decode()
+    if len( err ):
+        return list()
+    return out.split('\n')
+
+
+def p_program_running( q : str ) -> bool:
+    """ Return True if there is a process running named **exactly** `q` """
+    _EDIT_THRESH = 0.333
+    _LEN_THRESH  = 0.500
+    res = find_processes(q)
+    for r in res:
+        parts = r.split(' ')
+        if "--color=auto" in parts: # Skip the process of the search itself
+            continue
+        s0    = parts[-1].strip().lower()
+        s1    = f"{q}".strip().lower()
+        eDiff = levenshtein_search_dist( s0, s1 ) / min( len( s0 ), len( s1 ) )
+        lDiff = abs( len( s0 ) - len( s1 ) ) / max( len( s0 ), len( s1 ) )
+        if (eDiff <= _EDIT_THRESH) and (lDiff <= _LEN_THRESH):
+            return True
+    return False
+
+
+def run_cmd_bg( cmd : str ) -> bool:
+    """ Run the command as a background process and return success status """
+    try:
+        subprocess.Popen(
+            f"{cmd} &", 
+            nohup     = True, 
+            shell     = True,
+            stdin     = None, 
+            stdout    = None, 
+            stderr    = None, 
+            close_fds = True
+        )
+        return True
+    except Exception as e:
+        print( f"Tried to run \"{cmd}\", BUT {e} happened!" )
+        return False
+
 ########## PRINT HELPERS ###########################################################################
 
 class TColor:
@@ -353,33 +434,6 @@ def disp_text_header( titleStr : str, emphasis : int, preNL : int = 0, postNL : 
 
 
 
-########## STRING ANALYSIS #########################################################################
-
-def levenshtein_search_dist( s1 : str, s2 : str ) -> int:
-    """ Get the edit distance between two strings """
-    # Author: Salvador Dali, https://stackoverflow.com/a/32558749
-    # 1. Trivial cases: One string is empty
-    if not len(s1):
-        return len(s2)
-    if not len(s2):
-        return len(s1)
-    # 2. This algo assumes second string is at least as long as the first
-    if len(s1) > len(s2):
-        s1, s2 = s2, s1
-    if s1 in s2:
-        return 0
-    # 3. Compute distance and return
-    distances  = range(len(s1) + 1)
-    distances_ = None
-    for i2, c2 in enumerate(s2):
-        distances_ = deque()
-        distances_.append( i2+1 )
-        for i1, c1 in enumerate(s1):
-            if c1 == c2:
-                distances_.append(distances[i1])
-            else:
-                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
-    return distances_.pop() + abs(len(s1)-len(s2)) # HACK
 
 
 
@@ -399,13 +453,22 @@ class GraphicsInspector:
             with open( fPath, 'r' ) as f:
                 self.state = json.load( f )
         else:
-            self.state = {"lastStudent": env_get("_STATE_INT"),}
+            self.state = {
+                "lastStudent": env_get("_STATE_INT"),
+            }
         if "evals" not in self.state:
             self.state["evals"] = dict()
+        if "comments" not in self.state:
+            self.state["comments"] = list()
         if "resubNames" not in self.state:
             self.state["resubNames"] = list()
         return self.state
     
+
+    def comment( self, remark : str ):
+        """ Register a remark """
+        self.state["comments"].append( f"{remark}" )
+
 
     def store_student_eval( self, nameKey : str, record : dict ):
         """ Store the student record """
@@ -445,21 +508,28 @@ class GraphicsInspector:
         except Exception as e:
             self.state = dict()
             self.sPath = env_get("_STATE_PTH")
-        
-
-    
 
 
     def shutdown( self ):
         """ Tasks to run on exit """
         self.store_grading_state()
         sleep( 1.5 )
-        print( f"\n\n########## Set a new Due Date for the Following Students! ##########\n" )
-        for resub in self.state["resubNames"]:
-            print( resub )
-        print()
-        with open( "99_Resubs.txt", 'w' ) as f:
-            f.writelines( [f"{item}\n\n" for item in self.state["resubNames"]] )
+
+        if len( self.state["comments"] ):
+            print( f"\n\n########## Session Comments ##########\n" )
+            for remark in self.state["comments"]:
+                print( remark )
+            print()
+            with open( "98_Comments.txt", 'w' ) as f:
+                f.writelines( [f"* {item}\n" for item in self.state["comments"]] )
+
+        if len( self.state["resubNames"] ):
+            print( f"\n\n########## Set a new Due Date for the Following Students! ##########\n" )
+            for resub in self.state["resubNames"]:
+                print( resub )
+            print()
+            with open( "99_Resubs.txt", 'w' ) as f:
+                f.writelines( [f"{item}\n\n" for item in self.state["resubNames"]] )
 
 
     ##### File Operations #################################################
@@ -632,6 +702,10 @@ class GraphicsInspector:
         self.state["resubNames"] = list( set( self.state["resubNames"] ) )
     
 
+    def reset_resubs( self ):
+        self.state["resubNames"] = list()
+
+
     def prompt_resub_bullets( self, rubric ) -> dict:
         """ Build up a comment in pieces """    
         while 1:
@@ -709,7 +783,7 @@ class GraphicsInspector:
                         penalty = self.truthy_user_response( f"\nForce penalty for {key}? (Repeat Offense)" )
                         if not penalty:
                             add_student_flag( "resub" )
-                            self.register_resub( studentStr )
+                            self.register_resub( rubric["Name"] )
                             if "Remark" in self.rubric[ key ]:
                                 rubric["Feedback"]["RESUBMIT"].append( self.rubric[ key ]["Remark"] )
                             else:
@@ -883,6 +957,7 @@ class GraphicsInspector:
             'index'  : -1 ,
             'reverse': False,
             'flags'  : [],
+            'remarks'  : [],
         }
         ## Handle user input ##
         # Normal List Progression #
@@ -940,13 +1015,32 @@ class GraphicsInspector:
             print( "!///! END LIST !///!" )
             rtnState['loop'] = "break"
         # Accept Previous Data #
-        elif ('A' in usrCmd) or ('ACCEPT' in usrCmd):
+        elif ('A' in usrCmd) or ('ACCEPT' in usrCmd ):
             rtnState['flags'].append( 'acceptPrev' )
+        # Register comment and  #
+        elif ('C' in usrCmd) or ('COMMENT' in usrCmd ):
+            if (':' in usrCmd):
+                comment = usrCmd.split(':')[-1].strip().lower()
+            elif (',' in usrCmd):
+                comment = usrCmd.split(',')[-1].strip().lower()
+            else:
+                comment = usrCmd.split(' ')[-1].strip().lower()
+            self.comment( f"{comment}  @  {self.stdNam}  @  {self.get_timestamp()}" )
+            return self.run_menu()
         return rtnState
 
 
     def run_grading_session( self ):
         """ Find it, Compile it, Run it, Look at it! """
+        ### Preliminaries ###
+        # Kick open the env-specified text editor if it is not already!
+        if not p_program_running( env_get("_TXT_READER") ):
+            run_cmd_bg( env_get("_TXT_READER") )
+        # Erase resub record, they may have actually gotten it right this time!
+        self.reset_resubs()
+
+        ### Grading ###
+        # Iterate through the student names and grade each one!
         ii = 0
         N  = len( self.students )
         try:
@@ -980,17 +1074,26 @@ class GraphicsInspector:
                         ii += 1
                         continue
                     else:
-                        print( f"\nGrade RESUBMIT for {self.stdNam}\n" )
-                        if len( self.state["evals"][ studentStr ]["Feedback"]["DEDUCTIONS"] ):
+                        print( f"\nGrade RESUBMIT for {studentNam}\n" )
+                        Ndeduct = len( self.state["evals"][ studentStr ]["Feedback"]["DEDUCTIONS"] )
+                        if Ndeduct:
+                            print( f"There were {Ndeduct} previous deductions for {studentStr}!" )
                             prevNotes = list()
                             for deduct in self.state["evals"][ studentStr ]["Feedback"]["DEDUCTIONS"]:
-                                parts = f"{deduct}".split(',')
-                                nuStr = parts[0] + " (Prev. Submission, Cumulative), " + (",".join( parts[1:] ) if (len( parts ) > 1) else "")
-                                prevNotes.append( nuStr )
+                                remark  = deduct['Remark'] + " (Prev. Submission, Cumulative)"
+                                penalty = deduct['Penalty']
+                                prevNotes.append( {
+                                    'Remark' : remark,
+                                    'Penalty': penalty,
+                                } )
                             prevDeductions = { "Feedback" : { "DEDUCTIONS" : prevNotes } }
+                            pprint( prevDeductions )
+                            print()
+                        else:
+                            print( f"There were NO previous deductions for {studentStr}!" )
 
                 # Allow search/cancel/quit at the start of each list
-                print( f"\nAbout to evaluate {studentNam} ... \n" )
+                print( f"\nAbout to evaluate {studentNam} ... \n" ) # So that the User knows where they are before before responding 
                 stateChange = self.run_menu()
                 
                 # Handle Student Search --> Index Jump #
@@ -1008,13 +1111,18 @@ class GraphicsInspector:
                     self.store_grading_state()
 
                 if 'acceptPrev' in stateChange['flags']:
-                    print( f"Accept current state for {self.stdNam}" )
+                    print( f"Accept current state for {studentNam}" )
                     ii += 1
                     continue
 
                 self.run_student_report( studentStr, d, carryover = prevDeductions )
                 self.state["lastStudent"] = studentNam
                 ii += 1
+
+            for eval in self.state["evals"]:
+                if len( eval["Feedback"]["RESUBMIT"] ):
+                    self.register_resub( eval["Name"] )
+
             self.store_grading_state()
         except KeyboardInterrupt:
             self.shutdown()
@@ -1028,21 +1136,3 @@ if __name__ == "__main__":
     grin.run_grading_session()
     sleep( 1.5 )
     grin.shutdown()
-
-    
-
-        
-
-        
-
-        
-            
-                
-
-            
-                
-            
-
-            
-
-        
