@@ -983,7 +983,7 @@ class GraphicsInspector:
                     except Exception as e:
                         if srchCmd == 'Q':
                             disp_text_header( f"END PROGRAM", 10, preNL = 2, postNL = 1 )
-                            sys.exit(0)
+                            raise KeyboardInterrupt( "END PROGRAM" )
                         elif srchCmd == 'C':
                             rnkChoice = -1
                             invalid   = False
