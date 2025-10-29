@@ -155,7 +155,7 @@ def file_EXT_full_paths( drctry, exts : str | list[str] ):
         if os.path.isfile( fPath ) and (str(fPath).split('.')[-1].lower() in extMatch):
             rtnPaths.append( fPath )
         elif os.path.isdir( fPath ):
-            rtnPaths.extend( source_and_header_full_paths( fPath ) )
+            rtnPaths.extend( file_EXT_full_paths( fPath, exts ) )
     return list( rtnPaths )
 
 
@@ -187,16 +187,25 @@ def p_img_dims_pow_2( imgPath : str ):
     return (p_int_pow_2(w) and p_int_pow_2(h))
 
 
+def p_img_dims_smol( imgPath : str ):
+    """ Return True if the the image dimensions are less than or equal to 512 pixels on each edge """
+    _DIM_SMOL = 512
+    w, h = get_img_dims( imgPath )
+    return ((w <= _DIM_SMOL) and (h <= _DIM_SMOL))
+
+
 def p_textures_OK( drctry : str, exts : list[str] = None ):
     """ Inspect all textures in the directory, Return True if they are all okay, Print violations """
     if exts is None:
         exts = ["bmp",]
-    txtrPths = file_EXT_full_paths( drctry, exts )
+    txtrPths : list[str] = file_EXT_full_paths( drctry, exts )
     rtnOK    = True
     for tPath in txtrPths:
-        tOK   = p_img_dims_pow_2( tPath ) and p_image_square( tPath )
+        tOK   = p_img_dims_pow_2( tPath ) and p_image_square( tPath ) and p_img_dims_smol( tPath )
         if not tOK:
-            print( f"WEIRD SIZE - File: {tPath}, Dims: {get_img_dims(tPath)}" )
+            print( f"WEIRD SIZE: {get_img_dims(tPath)}, File: {tPath}" )
+        else:
+            print( f"File: {tPath.split('/')[-1]}, Dims: {get_img_dims(tPath)}, Path: {tPath}" )
         rtnOK = rtnOK and tOK 
     print()
     return rtnOK
@@ -598,8 +607,9 @@ class GraphicsInspector:
 
             if "Texture Scan" in self.rubric:
                 out_line( f, f"##### Texture Scan for: {self.stdNam} #####\n" )
-                print( f"Textures OK?: {p_textures_OK(hwDir,['bmp',])}" )
-                handle_rubric_item( "Texture Scan" )
+                txtrOK = p_textures_OK( hwDir, ["bmp","png","jpg","jpeg",] )
+                print( f"Textures OK?: {txtrOK}" )
+                handle_rubric_item( "Texture Scan", txtrOK )
 
             ##### Find and Display README ########
             fRead = find_README( hwDir )
@@ -641,7 +651,12 @@ class GraphicsInspector:
             handle_rubric_item( "Correct Executable Name", execName )
 
             if runStudent:
-                runDir = os.path.join( fExec.split('/')[:-1] )
+                parts = fExec.split('/')
+                if parts[0] == '.':
+                    runDir = parts[1]
+                else:
+                    print( parts )
+                    raise ValueError( "WHAT DO I DO WITH THIS?" )
                 print( f"Executable NAME: {execName}\n" )
                 print( f"Running ./{fExec} ..." )
                 # 2025-10-17: Allow the program to access the local dir?
@@ -740,7 +755,7 @@ class GraphicsInspector:
             'index'  : -1 ,
             'reverse': False,
             'flags'  : [],
-            'remarks'  : [],
+            'remarks': [],
         }
         ## Handle user input ##
         # Normal List Progression #

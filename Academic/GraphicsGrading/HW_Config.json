@@ -18,14 +18,14 @@
         "comment1": "##### Per-Assignment Requirements #####",
         "PA: Visible Light Source":  {"Correct": true, "Penalty": -20, "Flags": ["Ask", "Resubmit"], "Remark": "A visible, orbiting light source is MISSING!"},
         "Normal Scan":  {"Correct": true, "Penalty": -20, "Flags": ["Ask", "Resubmit"], "Remark": "Incorrect normals!"},
-        "Texture Scan":  {"Correct": true, "Penalty": -20, "Flags": ["Ask", "Resubmit"], "Remark": "Incorrect normals!"},
+        "Texture Scan":  {"Correct": true, "Penalty": -20, "Flags": ["Ask", "Resubmit"], "Remark": "Texture dimensions should be: Square, a Power of 2, less than or equal to 512! Please use \"GNU Image Manipulation Program\" (or your favored software) to correct this issue."},
         "PA: Textures Present":  {"Correct": true, "Penalty": -50, "Flags": ["Ask", "Resubmit"], "Remark": "All major geometry must be TEXTURED with meaningful texture coordinates!"},
         "PA: Orthogonal View":  {"Correct": true, "Penalty": -10, "Flags": ["Ask", "Resubmit", "skipOnResub"], "Remark": "Orthogonal View is MISSING!"}, 
         "PA: Perspective View":  {"Correct": true, "Penalty": -10, "Flags": ["Ask", "Resubmit", "skipOnResub"], "Remark": "Perspective View is MISSING!"}, 
         "PA: FPV":  {"Correct": true, "Penalty": -10, "Flags": ["Ask", "Resubmit", "skipOnResub"], "Remark": "First-Person View is MISSING or has PROBLEMS!"},
         
         "comment3": "##### Parameterized Requirements #####",
-        "Correct Executable Name": {"Correct": "hw5", "Penalty": -10, "Flags": ["Ask"], "Remark": "Executable NOT named \"hw#\"!"},
+        "Correct Executable Name": {"Correct": "hw6", "Penalty": -10, "Flags": ["Ask"], "Remark": "Executable NOT named \"hw#\"!"},
 
         "comment2": "##### General Assignment Requirements #####",
         "Distort on Resize": {"Correct": false, "Default": false, "Penalty": -10, "Flags": ["Ask", "Resubmit"], 
