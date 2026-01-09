@@ -10,6 +10,11 @@ This is to assist course staff in grading many student Java assignments in one s
 
 ## Linux
 
+### Install JDK @ Ubuntu
+1. [Download JDK DEB](https://www.oracle.com/java/technologies/downloads/)
+2. `sudo apt install ./jdk-25_linux-x64_bin.deb`
+2. `sudo apt install ./jdk-21_linux-x64_bin.deb`
+
 ### PMD, Static Analysis
 1. `cd /tmp/`
 1. `wget https://github.com/pmd/pmd/releases/download/pmd_releases%2F7.10.0/pmd-dist-7.10.0-bin.zip`
@@ -24,10 +29,12 @@ This is to assist course staff in grading many student Java assignments in one s
 1. Add to "~/.bashrc": `alias idea="/opt/idea/bin/idea"`
 
 ### Gradle, Build System
-1. `sudo apt install openjdk-21-jdk`
+1. Make sure that some version of Oracle Java is installed, as above!
+1. `cd /tmp/`
 1. `curl -s "https://get.sdkman.io" | bash`
 1. `source "$HOME/.sdkman/bin/sdkman-init.sh"`
-1. `sdk install gradle 8.13`
+1. `sdk list gradle`, Review latest available version 
+1. `sdk install gradle 9.2.1`, Or most recent
 
 # Grading Script Usage Instructions (per Assignment)
 1. Copy "[00_clone_test_build_all.py](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/00_clone_test_build_all.py)", "[OOD_Java-Rules.xml](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/OOD_Java-Rules.xml)", and "[HW_Config.json](https://github.com/jwatson-CO-edu/py_templates_utils/blob/master/Academic/OODGrading/HW_Config.json)" to the root directory for this assignment.
