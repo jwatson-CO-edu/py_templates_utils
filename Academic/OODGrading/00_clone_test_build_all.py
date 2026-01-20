@@ -54,12 +54,13 @@ try:
     _EN_ALL_TST     = config["Settings"]["_EN_ALL_TST"]
     _SHO_CONTRB     = config["Settings"]["_SHO_CONTRB"]
     ### Assignment ###
-    _LIST_PATHS = config["HWX"]["_LIST_PATHS"]
-    _SOURCE_DIR = config["HWX"]["_SOURCE_DIR"]
-    _TEST_DIR   = config["HWX"]["_TEST_DIR"] 
-    _BRANCH_STR = config["HWX"]["_BRANCH_STR"]
-    _TOPIC_SRCH = config["HWX"]["_TOPIC_SRCH"]
-    _TOPIC_XCLD = config["HWX"]["_TOPIC_XCLD"]
+    _HW_TAG     = config["Settings"]["_HW_TAG"]
+    _LIST_PATHS = config[_HW_TAG]["_LIST_PATHS"]
+    _SOURCE_DIR = config[_HW_TAG]["_SOURCE_DIR"]
+    _TEST_DIR   = config[_HW_TAG]["_TEST_DIR"] 
+    _BRANCH_STR = config[_HW_TAG]["_BRANCH_STR"]
+    _TOPIC_SRCH = config[_HW_TAG]["_TOPIC_SRCH"]
+    _TOPIC_XCLD = config[_HW_TAG]["_TOPIC_XCLD"]
 except KeyError as err:
     print( f"\n\033[91mFAILED to load config file!, {err}\033[0m\n" )
 
@@ -746,7 +747,8 @@ def enable_all_tests( tstDir : str, fileExt : str = "java" ):
             with open( jPath, 'w' ) as f_i:
                 for line_j in wLines_i:
                     f_i.write( f"{line_j}" )
-    print( f"\nEnabled {enTests} tests!\n" )
+    if enTests:
+        print( f"\nEnabled {enTests} tests!\n" )
 
 
 

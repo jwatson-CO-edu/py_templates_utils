@@ -15,6 +15,7 @@
         "_EDITOR_COMMAND": "open -e"
     },
     "Settings": {
+        "_HW_TAG"        : "HW01",
         "_PMD_JAVA_RULES": "OOD_Java-Rules.xml",
         "_GET_RECENT"    : true,
         "_REPORT_DIR"    : "output",
@@ -28,14 +29,12 @@
         "_EN_ALL_TST"    : true,
         "_SHO_CONTRB"    : true
     },
-    "HWX": {
+    "HW01": {
         "_LIST_PATHS": ["ugrads.txt", "grads.txt"],
-        "_SOURCE_DIR": "src/main/java/csci/ooad",
-        "_TEST_DIR"  : "src/test/java/csci/ooad",
-        "_BRANCH_STR": "9",
-        "_TOPIC_SRCH": ["turn", "adapter", "adaptor", "pause", "input", "command", "model", "view", "control", 
-                        "service", "server", "endpoint", "api", "json", "springboot", "request", "response",
-                        "/api/games", "/api/game/{gameId}", "/api/game/create", "/api/game/{gameId}/playTurn/{command}"],
-        "_TOPIC_XCLD": ["return", "observer"]
+        "_SOURCE_DIR": "src/main/java/polymorphia",
+        "_TEST_DIR"  : "src/test/java/polymorphia",
+        "_BRANCH_STR": "1",
+        "_TOPIC_SRCH": ["name","health","creature","adventurer","battle","fight"],
+        "_TOPIC_XCLD": ["return"]
     }
 }
