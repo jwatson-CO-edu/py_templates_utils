@@ -19,6 +19,8 @@
     - Every responsibility of a class is an area of potential change
     - We say that a module or class has **high cohesion** when it is designed around a set of related functions
 * Dependency Injection: Delegating responsibility to member objects
+    - When instantiating an object, pass in a contained object as a parameter. This contained object can thus have a delegated responsibility with a variable implementation.
+    - Param type in the container is a (abstract) superclass that covers all the needed implementation subclasses.  
 
 
 # Observer Pattern
