@@ -2,7 +2,7 @@
 
 ##### Imports #####
 ### Standard ###
-import subprocess, os, sys, platform, json
+import subprocess, os, sys, platform, json, traceback
 from pprint import pprint
 from collections import deque
 from pprint import pprint
@@ -12,21 +12,33 @@ from time import sleep
 ##### Constants #####
 _CONFIG_PATH = 'HW_Config.json'
 
+
+##### Config Helpers #####
+
+def path_exists_fallback( pathList : list[str] ) -> str:
+    """ Return the first path in the list that exists, Otherwise return `None` """
+    for path in pathList:
+        if os.path.isdir( os.path.dirname( path ) ):
+            return path
+    return None
+
+
 # Get all OS information in one tuple
 platform_info = platform.uname()
-print(f"Platform Information:")
+print( f"Platform Information:" )
 pprint( platform_info )
-print
+print()
 _USER_SYSTEM = platform_info.system
 
 config = None
-with open(_CONFIG_PATH, 'r') as f:
+with open( _CONFIG_PATH, 'r' ) as f:
     config = json.load(f)
 
 try:
     ### Platform ###
-    _INTELLIJ_PATH  = config[_USER_SYSTEM]["_INTELLIJ_PATH"]
+    _INTELLIJ_PATH  = path_exists_fallback( config[_USER_SYSTEM]["_INTELLIJ_PATH"] )
     _PMD_PATH       = config[_USER_SYSTEM]["_PMD_PATH"]
+    _GRADLE_PATH    = config[_USER_SYSTEM]["_GRADLE_PATH"]
     _EDITOR_COMMAND = config[_USER_SYSTEM]["_EDITOR_COMMAND"]
     ### Settings ###
     _PMD_JAVA_RULES = config["Settings"]["_PMD_JAVA_RULES"]
@@ -36,13 +48,19 @@ try:
     _RUN_TESTS      = config["Settings"]["_RUN_TESTS"]
     _NUM_TESTS      = config["Settings"]["_NUM_TESTS"]
     _N_BIG_BLK      = config["Settings"]["_N_BIG_BLK"]
+    _INSPECT_J      = (config["Settings"]["_INSPECT_J"] and (_INTELLIJ_PATH is not None))
+    _SRCH_MARGN     = config["Settings"]["_SRCH_MARGN"]
+    _OPEN_SNPPT     = config["Settings"]["_OPEN_SNPPT"]
+    _EN_ALL_TST     = config["Settings"]["_EN_ALL_TST"]
+    _SHO_CONTRB     = config["Settings"]["_SHO_CONTRB"]
     ### Assignment ###
-    _LIST_PATHS = config["HWX"]["_LIST_PATHS"]
-    _SOURCE_DIR = config["HWX"]["_SOURCE_DIR"]
-    _BRANCH_STR = config["HWX"]["_BRANCH_STR"]
-    _TOPIC_SRCH = config["HWX"]["_TOPIC_SRCH"]
-    _SRCH_MARGN = config["HWX"]["_SRCH_MARGN"]
-    _OPEN_SNPPT = config["HWX"]["_OPEN_SNPPT"]
+    _HW_TAG     = config["Settings"]["_HW_TAG"]
+    _LIST_PATHS = config[_HW_TAG]["_LIST_PATHS"]
+    _SOURCE_DIR = config[_HW_TAG]["_SOURCE_DIR"]
+    _TEST_DIR   = config[_HW_TAG]["_TEST_DIR"] 
+    _BRANCH_STR = config[_HW_TAG]["_BRANCH_STR"]
+    _TOPIC_SRCH = config[_HW_TAG]["_TOPIC_SRCH"]
+    _TOPIC_XCLD = config[_HW_TAG]["_TOPIC_XCLD"]
 except KeyError as err:
     print( f"\n\033[91mFAILED to load config file!, {err}\033[0m\n" )
 
@@ -75,7 +93,6 @@ def get_ordered_students( listPath ):
         for line in lines:
             if len( line ) > 2:
                 students.append( line.replace('-','').replace("'",'').replace(",",'').strip().lower().split() )
-    # students.sort( key = lambda x: x[-1] )
     students.sort( key = lambda x: x[0] )
     return students
 
@@ -118,14 +135,17 @@ def run_cmd( ruleStr : str, timeout_s : int = 0, suppressErr : bool = False ) ->
     # NOTE: If the client code requests a timeout, then there will be less feedback!
 
     if timeout_s:
-        out = subprocess.check_output( ruleStr, 
-                                       stdout  = subprocess.PIPE, 
-                                       stderr  = subprocess.STDOUT,
-                                       shell   = True,
-                                       timeout = int( timeout_s ) )
+        try:
+            out = subprocess.check_output( ruleStr, 
+                                           stderr  = subprocess.STDOUT,
+                                           shell   = True,
+                                           timeout = int( timeout_s ) )
+        except subprocess.TimeoutExpired as e:
+            out = ""
+            print( f"Time limit of {int( timeout_s )} seconds EXPIRED for process\n{ruleStr}\n{e}\n" )
         return { 
             'cmd': ruleStr,
-            'err': "",
+            'err': traceback.format_exc(),
             'out': out.decode(),
         }
     else:
@@ -151,14 +171,9 @@ def run_cmd( ruleStr : str, timeout_s : int = 0, suppressErr : bool = False ) ->
 
 def gradle_test( dirPrefix : str = "" ):
     """ Run all Gradle tests """
-    # if len( dirPrefix ):
-    #     dirPrefix = f"./{dirPrefix}"
-    res = run_cmd( f"rm -rf {dirPrefix}/.idea" )
-    res = run_cmd( f"gradle clean -p {dirPrefix}", suppressErr = True )
-    res = run_cmd( f"gradle build -p {dirPrefix} -cp src", suppressErr = True )
-    cmd = f"gradle test --no-build-cache -d -p {dirPrefix}"
-    # cmd = f"gradle cleanTest test --no-build-cache -d -p {dirPrefix}"
-    # cmd = f"gradle cleanTest test --scan --no-build-cache -d -p {dirPrefix}" # WAY TOO LONG
+    res = run_cmd( f"{_GRADLE_PATH} clean -p {dirPrefix}", suppressErr = True )
+    res = run_cmd( f"{_GRADLE_PATH} build -p {dirPrefix} -cp src", suppressErr = True )
+    cmd = f"{_GRADLE_PATH} cleanTest test --no-build-cache -d -p {dirPrefix}"
     res = run_cmd( cmd, suppressErr = True )
     if len( res['err'] ):
         print( f"ERROR:\n{res['err']}" )
@@ -209,11 +224,7 @@ def prep_build_spec( dirPrefix : str = "", buildFile : str = "build.gradle" ):
         chunk = f"\nsourceSets.main.java.srcDirs = ['{srcDir}']\n"
         chunk += "\njar {" + '\n'
         chunk += "    manifest {" + '\n'
-
-        # chunk += f"       attributes 'Main-Class': '{mainPath.replace('/','.')}.{mainClass}'" + '\n'
-        # chunk += f"       attributes 'Main-Class': '{mainClass}'" + '\n'
         chunk += f"       attributes 'Main-Class': '{srcDir.split('/')[-1]}.{mainClass}'" + '\n'
-        
         chunk += "    }" + '\n'
         chunk += "    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }" + '\n'
         chunk += "}" + '\n'
@@ -282,7 +293,7 @@ def scrape_repo_address( htPath ):
                 if ("github.com" in part) and (' ' not in part):
                     parts_i = part.split('?')
                     part_i  = parts_i[0]
-                    rtnStr  = part_i.replace( "https://github.com/", "git@github.com:" ).split( "/tree" )[0].split( "/pull" )[0]
+                    rtnStr  = part_i.replace( "https://github.com/", "git@github.com:" ).split( "/tree" )[0].split( "/pull" )[0].split( "#" )[0].split( "/blob" )[0]
                     print( f"Found URL: {rtnStr}" )
                     return rtnStr
     return None
@@ -296,10 +307,8 @@ def get_folder_from_github_addr( gitAddr ):
 
 def get_most_recent_branch( dirPrefix : str = "", reqStr = None ):
     """ Extract the branch that was most recently created """
-    # cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ ls-remote --heads --sort=-authordate origin"
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ ls-remote --heads --sort=-committerdate origin"
     out = run_cmd( cmd )['out']
-    # print( f"{out}" )
     rtn = ""
     if reqStr is not None:
         req = f"{reqStr}"
@@ -322,7 +331,6 @@ def checkout_branch( dirPrefix : str = "", branchName : str = "" ):
     """ Check out the specified branch """
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ stash save"
     run_cmd( cmd )
-    # cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ checkout -t origin/{branchName}" 
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ checkout origin/{branchName}" 
     out = run_cmd( cmd )['out']
     cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ pull origin {branchName}" 
@@ -331,6 +339,37 @@ def checkout_branch( dirPrefix : str = "", branchName : str = "" ):
     out += run_cmd( cmd )['out']
     print( f"{out}" )
 
+
+def count_LOC_contributions( dirPrefix : str = "", deleteFactor = 0.125 ):
+    """ Get usernames and sum all LOC contributed by each user, Return as a dictionary """
+    cmd = f"git --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ shortlog -sn --all" 
+    out = run_cmd( cmd )['out']
+    lns = f"{out}".split('\n')
+    nms = list()
+    for line in lns:
+        if len( line ) > 4:
+            nms.append( line.split()[-1] )
+    tot = 0.0
+    rtn = dict()
+    for gitName in nms:
+        rtn[ gitName ] = 0.0
+        cmd = f'git --no-pager --git-dir=./{dirPrefix}/.git --work-tree=./{dirPrefix}/ log --author="{gitName}" --format=tformat: --numstat'
+        out = run_cmd( cmd )['out']
+        lns = f"{out}".split('\n')
+        for line in lns:
+            parts   = line.split()
+            if len( parts ) < 2:
+                continue
+            try:
+                contrib = int(parts[0])*1.0 + int(parts[1])*deleteFactor
+                tot    += contrib
+                rtn[ gitName ] += contrib
+            except ValueError:
+                continue
+            
+    for k in rtn.keys():
+        rtn[k] /= tot
+    return rtn
 
 
 ########## STATIC ANALYSIS #########################################################################
@@ -383,7 +422,6 @@ def levenshtein_search_dist( s1 : str, s2 : str ) -> int:
                 distances_.append(distances[i1])
             else:
                 distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
-    # return distances_.pop()
     return distances_.pop() + abs(len(s1)-len(s2)) # HACK
 
 
@@ -411,12 +449,14 @@ def split_lines_with_depth_change( nptStr : str ):
     return list( rtnLines ), list( linDepth )
 
 
-def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : list[str], searchOver : int = 40 ):
+def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : list[str], searchOver : int = 40,
+                                             excludeTerms : list[str] = None ):
     """ Attempt to grab relevant portion of code """
     lines, lnDeltaDepth = split_lines_with_depth_change( javaSourceStr )
     N = len( lines )
     depth    = 0
     covered  = set([])
+    exclude  = excludeTerms if (excludeTerms is not None) else list()
     rtnLines = {
         "chunks" : list(),
         "ranges" : list(),
@@ -430,6 +470,11 @@ def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : 
             if sTerm in line_i:
                 hit = True
                 break
+        if hit:
+            for xTerm in exclude:
+                if xTerm in line_i:
+                    hit = False
+                    break
         if hit:
             blockDex = i
             ovrDpth  = 0
@@ -470,8 +515,6 @@ def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : 
             rtnLines['ranges'].append( [bgn,end,] )
     return rtnLines
     
-
-
 
 
 ########## UTILITIES && FEATURES ###################################################################
@@ -580,33 +623,30 @@ def run_menu( students ):
 def get_all_file_paths( directory ):
     # Source: https://www.google.com/search?client=firefox-b-1-lm&channel=entpr&q=python+list+of+paths+from+recursive+walk
     file_paths = []
-    # print( directory )
     for dirpath, _, filenames in os.walk( directory ):
-        # print( dirpath )
         for filename in filenames:
             file_path = os.path.join( dirpath, filename )
             file_paths.append( file_path )
-    # print( file_paths )
     return file_paths
 
 
-def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], searchOver : int = 40, fileExt : str = "java" ):
+def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], searchOver : int = 40, fileExt : str = "java",
+                                   excludeTerms : list[str] = None ):
     """ Get identified chunks in the code """
-    rtnStr  = ""
-    # jvPaths = [path for path in os.listdir( srcDir ) if f".{fileExt}".lower() in path.lower()]
-    jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
+    rtnStr   = ""
+    jvPaths  = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
+    exclude  = excludeTerms if (excludeTerms is not None) else list()
     while not len( jvPaths ):
         srcDir  = os.path.dirname( srcDir )
         jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
     for path in jvPaths:
         rtnStr += f"///// {path} /////\n"
-        # with open( os.path.join( srcDir, path ), 'r' ) as f_i:
         with open( path, 'r' ) as f_i:
             src_i = f"{f_i.read()}"
-            res_i = grab_identified_sections_of_java_source( src_i, searchTerms, searchOver )
+            res_i = grab_identified_sections_of_java_source( src_i, searchTerms, searchOver, excludeTerms )
             for j, chunk_j in enumerate( res_i['chunks'] ):
                 range_j = res_i['ranges'][j]
-                rtnStr += f"/// Lines: {range_j} ///\n"
+                rtnStr += f"/// Lines: [{range_j[0]+1}, {range_j[1]}] ///\n"
                 for k, line_k in enumerate( chunk_j ):
                     found = False
                     kWord = ""
@@ -615,8 +655,29 @@ def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], search
                             found = True
                             kWord = term
                             break
-                    rtnStr += f"/*{range_j[0]+k: 4}*/\t{line_k}{f' // << kw: {kWord} <<' if found else ''}\n"
+                    if found:
+                        for term in exclude:
+                            if term.lower() in f"{line_k}".lower():
+                                found = False
+                                break
+                    rtnStr += f"/*{range_j[0]+k+1: 4}*/\t{line_k}{f' // << kw: {kWord} <<' if found else ''}\n"
                 rtnStr += f"\n"
+            if not len( res_i['chunks'] ):
+                found = False
+                kWord = ""
+                for term in searchTerms:
+                    if term.lower() in f"{path}".lower():
+                        found = True
+                        kWord = term
+                        break
+                if found:
+                    lines, _ = split_lines_with_depth_change( src_i )
+                    rtnStr += f' // vvvvv-- kw: {kWord} in "{str( path ).split("/")[-1]}"! --vvvvv\n'
+                    for k in range( min( _SRCH_MARGN, len( lines ) ) ):
+                        line_k = lines[k]
+                        rtnStr += f"/*{k+1: 4}*/\t{line_k}\n"
+
+
         rtnStr += f"\n\n"
     return rtnStr
 
@@ -629,7 +690,6 @@ def count_block_lines( srcDir : str, searchOver : int = 3, fileExt : str = "java
         srcDir  = os.path.dirname( srcDir )
         jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
     for path in jvPaths:
-        # with open( os.path.join( srcDir, path ), 'r' ) as f_i:
         with open( path, 'r' ) as f_i:
             src_i = f"{f_i.read()}"
             lns_i, dpt_i = split_lines_with_depth_change( src_i )
@@ -642,7 +702,6 @@ def count_block_lines( srcDir : str, searchOver : int = 3, fileExt : str = "java
                     stk_i.append({
                         'path'  : f"{path}".split('/')[-1],
                         'begin' : j+1,
-                        # 'lines' : deque( lns_i[ bgn_i : j ] ),
                         'lines' : deque(),
                     })
                 # All existing stack elems accrue the line
@@ -665,8 +724,33 @@ def report_block_sizes( srcDir : str, searchOver : int = 3, fileExt : str = "jav
         path = block['path']
         size = len( block['lines'] )
         print( f"{path: <{wdtPath}} : {size: >{wdtSize}} : On Line {block['begin']: >{wdtSize}}" )
-        # for i in range( searchOver+1 ):
-        #     print( f"\t{block['lines'][i]}" )
+
+
+def enable_all_tests( tstDir : str, fileExt : str = "java" ):
+    """ Find all `@Disable`d tests and comment out the decorator """
+    jvPaths = [path for path in get_all_file_paths( tstDir ) if f".{fileExt}".lower() in str(path).lower()]
+    print( f"\nFound {len(jvPaths)} files in {tstDir}!" )
+    enTests = 0
+    for jPath in jvPaths:
+        wLines_i = deque()
+        rewrit_i = False
+        with open( jPath, 'r' ) as f_i:
+            lines_i = f_i.readlines()
+            for line_j in lines_i:
+                if "@Disabled" in line_j:
+                    wLines_i.append( f"//{line_j}" )
+                    rewrit_i = True
+                    enTests += 1
+                else:
+                    wLines_i.append( f"{line_j}" )
+        if rewrit_i:
+            with open( jPath, 'w' ) as f_i:
+                for line_j in wLines_i:
+                    f_i.write( f"{line_j}" )
+    if enTests:
+        print( f"\nEnabled {enTests} tests!\n" )
+
+
 
 
 
@@ -760,12 +844,15 @@ if __name__ == "__main__":
 
             ### Gather Snippets ###
             print( f"About to fetch relevant code ..." )
-            sdtSrc = grab_identified_source_chunks( os.path.join( stdDir, _SOURCE_DIR ), _TOPIC_SRCH, _SRCH_MARGN, "java" )
+            print( f"Include: {_TOPIC_SRCH}" )
+            print( f"Exclude: {_TOPIC_XCLD}" )
+            sdtSrc = grab_identified_source_chunks( os.path.join( stdDir, _SOURCE_DIR ), _TOPIC_SRCH, _SRCH_MARGN, "java", 
+                                                    _TOPIC_XCLD )
             stdSnp = f"{_REPORT_DIR}/{stdStr}_related_source.java"
             with open( stdSnp, 'w' ) as f:
                 f.write( sdtSrc )
             if _OPEN_SNPPT:
-                run_cmd( f"{_EDITOR_COMMAND} {stdSnp}" )
+                run_cmd( f"{_EDITOR_COMMAND} {stdSnp}", timeout_s = 3 )
 
             ### Static Analysis ###
             print( f"About to run code style checks ..." )
@@ -778,10 +865,27 @@ if __name__ == "__main__":
             report_block_sizes( os.path.join( stdDir, _SOURCE_DIR ), searchOver = 2 )
             disp_text_header( f"{stdNam} Verbosity Check COMPLETE", 3, preNL = 0, postNL = 1 )
 
+            ### Show LOC Contributions by Student ###
+            if _SHO_CONTRB:
+                disp_text_header( f"Per-user contributions for repo from {stdNam}", 3, preNL = 1, postNL = 0 )
+                contrib = count_LOC_contributions( dirPrefix = stdDir, deleteFactor = 0.125 )
+                names   = list( contrib.keys() )
+                names.sort()
+                nmMax = max( [len(name) for name in names] )
+                lnMax = max( [len(f"{loc:0.3f}") for loc in list(contrib.values())] )
+                for name in names:
+                    print( f"{name: <{nmMax}} : {round(contrib[name],3): >{lnMax}}" )
+                disp_text_header( f"{stdNam} Contributions COMPLETE", 3, preNL = 0, postNL = 1 )
+
             ### IntelliJ View ###
-            print( f"About to inspect Java project ..." )
-            inspect_project( dirPrefix = stdDir )
-            print()
+            if _INSPECT_J:
+                ## Enable Tests for Coverage ##
+                if _EN_ALL_TST:
+                    enable_all_tests( os.path.join( stdDir, _TEST_DIR), fileExt = "java" )
+
+                print( f"About to inspect Java project ..." )
+                inspect_project( dirPrefix = stdDir )
+                print()
 
             disp_text_header( f"{stdNam}, Eval completed!", 5, preNL = 1, postNL = 2 )
 

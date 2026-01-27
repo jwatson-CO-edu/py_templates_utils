@@ -38,6 +38,9 @@
         <exclude name="UnnecessaryImport"/>
         <exclude name="OnlyOneReturn"/>
         <exclude name="CommentDefaultAccessModifier"/>
+        <exclude name="ConfusingTernary"/>
+        <exclude name="FieldNamingConventions"/>
+        <exclude name="ControlStatementBraces"/>
     </rule>
 
 
@@ -52,6 +55,7 @@
 
     <rule ref="category/java/performance.xml">
         <exclude name="UseStringBufferForStringAppends"/>
+        <exclude name="AppendCharacterWithChar"/>
     </rule>
 
 </ruleset>

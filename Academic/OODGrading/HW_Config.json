@@ -1,24 +1,40 @@
 {
-    "Linux" : {
-        "_INTELLIJ_PATH" : "/opt/idea/bin/idea",
+    "Linux": {
+        "_INTELLIJ_PATH" : ["/opt/idea/bin/idea"],
         "_PMD_PATH"      : "/opt/pmd-bin-7.10.0/bin/pmd",
+        "_GRADLE_PATH"   : "/home/$USER/.sdkman/candidates/gradle/current/bin/gradle",
         "_EDITOR_COMMAND": "xed"
     },
-    "Settings" : {
+    "Darwin": {
+        "_INTELLIJ_PATH" : [
+            "/Applications/IntelliJ\\ IDEA.app/Contents/MacOS/idea",
+            "/Applications/IntelliJ\\ IDEA\\ CE.app/Contents/MacOS/idea"
+        ],
+        "_PMD_PATH"      : "/opt/pmd-bin-7.10.0/bin/pmd",
+        "_GRADLE_PATH"   : "/home/$USER/.sdkman/candidates/gradle/current/bin/gradle",
+        "_EDITOR_COMMAND": "open -e"
+    },
+    "Settings": {
+        "_HW_TAG"        : "HW01",
         "_PMD_JAVA_RULES": "OOD_Java-Rules.xml",
         "_GET_RECENT"    : true,
         "_REPORT_DIR"    : "output",
         "_N_SEARCH_R"    : 8,
-        "_RUN_TESTS"     : false,
-        "_NUM_TESTS"     : 2,
-        "_N_BIG_BLK"     : 25
+        "_RUN_TESTS"     : true,
+        "_NUM_TESTS"     : 1,
+        "_N_BIG_BLK"     : 25,
+        "_INSPECT_J"     : true,
+        "_SRCH_MARGN"    : 60,
+        "_OPEN_SNPPT"    : true,
+        "_EN_ALL_TST"    : true,
+        "_SHO_CONTRB"    : true
     },
-    "HWX" : {
-        "_LIST_PATHS": ["interviews.txt"],
-        "_SOURCE_DIR": "src/main/java/csci/ooad",
-        "_BRANCH_STR": "5",
-        "_TOPIC_SRCH": ["strat","strategy","interface","action"],
-        "_SRCH_MARGN": 40,
-        "_OPEN_SNPPT": true
+    "HW01": {
+        "_LIST_PATHS": ["ugrads.txt", "grads.txt"],
+        "_SOURCE_DIR": "src/main/java/polymorphia",
+        "_TEST_DIR"  : "src/test/java/polymorphia",
+        "_BRANCH_STR": "1",
+        "_TOPIC_SRCH": ["name","health","creature","adventurer","battle","fight"],
+        "_TOPIC_XCLD": ["return"]
     }
 }

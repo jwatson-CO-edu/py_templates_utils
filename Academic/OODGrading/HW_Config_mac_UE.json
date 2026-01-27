@@ -1,0 +1,17 @@
+{
+    "Darwin" : {
+        "_INTELLIJ_PATH" : "/Applications/IntelliJ\\ IDEA.app/Contents/MacOS/idea",
+        "_PMD_PATH"      : "/opt/pmd-bin-7.10.0/bin/pmd"
+    },
+    "Settings" : {
+        "_PMD_JAVA_RULES": "OOD_Java-Rules.xml",
+        "_GET_RECENT"    : true,
+        "_REPORT_DIR"    : "output",
+        "_N_SEARCH_R"    : 5
+    },
+    "HWX" : {
+        "_LIST_PATHS": ["hw4.txt"],
+        "_SOURCE_DIR": "src/main/java/csci/ooad",
+        "_BRANCH_STR": "4"
+    }
+}

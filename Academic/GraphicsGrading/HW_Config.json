@@ -1,0 +1,54 @@
+{
+    "_LIST_PATH" :  "MyStudents.txt",
+    "_STATE_PTH" :  "GradingState.json",
+    "_STATE_INT" :  "AAAA",
+    "_BAD_DIR"   :  "00_NOTIFY",
+    "_GOOD_DIR"  :  "01_OK",
+    "_N_SEARCH_R": 20,
+    "_MIN_LIN_CH": 20,
+    "_L_COM_FRAC":  0.025,
+    "_ALWAYS_PIE":  false ,
+    "_TXT_READER":  "xed",
+    "_BAD_PATTRN":  "glut",
+    "_GOOD_NAME" : "hw6",
+    "_RULE_NAMES": ["", "hw6", "hw06", "HW6", "HW06", 
+                    "texture", "textures", "texturing", 
+                    "Texture", "Textures", "Texturing"],
+    "_RUBRIC_DCT": {
+        "comment1": "##### Per-Assignment Requirements #####",
+        "PA: Visible Light Source":  {"Correct": true, "Penalty": -20, "Flags": ["Ask", "Resubmit"], "Remark": "A visible, orbiting light source is MISSING!"},
+        "Normal Scan":  {"Correct": true, "Penalty": -20, "Flags": ["Ask", "Resubmit"], "Remark": "Incorrect normals!"},
+        "Texture Scan":  {"Correct": true, "Penalty": -20, "Flags": ["Ask", "Resubmit"], "Remark": "Texture dimensions should be: Square, a Power of 2, less than or equal to 512! Please use \"GNU Image Manipulation Program\" (or your favored software) to correct this issue."},
+        "PA: Textures Present":  {"Correct": true, "Penalty": -50, "Flags": ["Ask", "Resubmit"], "Remark": "All major geometry must be TEXTURED with meaningful texture coordinates!"},
+        "PA: Orthogonal View":  {"Correct": true, "Penalty": -10, "Flags": ["Ask", "Resubmit", "skipOnResub"], "Remark": "Orthogonal View is MISSING!"}, 
+        "PA: Perspective View":  {"Correct": true, "Penalty": -10, "Flags": ["Ask", "Resubmit", "skipOnResub"], "Remark": "Perspective View is MISSING!"}, 
+        "PA: FPV":  {"Correct": true, "Penalty": -10, "Flags": ["Ask", "Resubmit", "skipOnResub"], "Remark": "First-Person View is MISSING or has PROBLEMS!"},
+        
+        "comment3": "##### Parameterized Requirements #####",
+        "Correct Executable Name": {"Correct": "hw6", "Penalty": -10, "Flags": ["Ask"], "Remark": "Executable NOT named \"hw#\"!"},
+
+        "comment2": "##### General Assignment Requirements #####",
+        "Distort on Resize": {"Correct": false, "Default": false, "Penalty": -10, "Flags": ["Ask", "Resubmit"], 
+                              "Remark": "View DISTORTS when the window is resized!"},
+        "README Present":          {"Correct": true, "Default": false, "Penalty": -10, "Flags": ["Ask"], "Remark": "No README provided!"},
+        "Compiles Without Errors": {"Correct": true , "Default": true , "Penalty": -10, "Flags": ["Ask", "Resubmit"], "Remark": "COMPILER ERROR(S)"},
+        "Name in Window Title": {"Correct": true , "Default": true , "Penalty": -10, "Flags": ["Ask", "Resubmit"], "Remark": "FULL name MUST be in the window title!"},
+        "Contains GenAI Output": {"Correct": false, "Penalty": -100, "Flags": ["Ask", "Resubmit"], "Remark": "THIS IS YOUR OPPORTUNITY TO DISCLOSE NON-ORIGINAL CODE OBTAINED FROM EXTERNAL SOURCES **WITH PROPER ATTRIBUTION**!"},
+        "Executable Depth": {"Correct": 1, "Default": 2, "Penalty": -10, "Flags": [], 
+                             "Remark": "ZIP file was too deeply nested! FOLLOW THESE INSTRUCTIONS EXACTLY: https://canvas.colorado.edu/courses/122404/modules/items/6590446"}
+    },
+    "_SCORING_DCT": {
+        "Name"          : "STUDENT NAME",
+        "Timestamp"     : "YYYY-MM-DD_HH-MM-SS",
+        "Possible Score": 100,
+        "Student Score" : 100,
+        "Flags"         : [],
+        "Feedback"      : {
+            "COMMENTS"  : [],
+            "DEDUCTIONS": [],
+            "RESUBMIT"  : [],
+            "GEOMETRY"  : []
+        }
+        
+    }
+}

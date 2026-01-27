@@ -6,6 +6,8 @@
 **/*.out
 **/*.log
 **/*.pdf
+**/*.svg
+**/secrets/*
 
 # Pomodoro #
 # Ignore the user's personal config files

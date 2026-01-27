@@ -6,6 +6,7 @@
 ### Special ###
 import svgwrite
 import cairosvg
+import numpy as np
 
 
 ##### Constants #####
@@ -16,6 +17,92 @@ _DOC_DPI       = 300
 _DOC_WIDTH_PX  = int( _DOC_WIDTH_IN  * _DOC_DPI )
 _DOC_HEIGHT_PX = int( _DOC_HEIGHT_IN * _DOC_DPI )
 _DOC_MARGIN_PX = int( _DOC_MARGIN_IN * _DOC_DPI )
+
+
+
+########## DOCUMENT LAYOUT #########################################################################
+
+class Box:
+    """ Rectangular Region """
+
+    def __init__( self, xyLocPx, xySizPx ):
+        """ Set necessary parameters """
+        self.xyLocPx = xyLocPx
+        self.xySizPx = xySizPx
+
+    def h_divide( self, lenList, hPadPx = -1.0 ):
+        """ Horizontally devide the box """
+        nuLst = list()
+        N     = len(lenList)
+        if hPadPx > 0.0:
+            for i, len_i in enumerate( lenList ):
+                nuLst.append( len_i )
+                if i < (N-1):
+                    nuLst.append( hPadPx )
+            lenList = nuLst[:]
+        tot = sum( [elem for elem in lenList if (elem > 0)] )
+        neg = sum( [elem for elem in lenList if (elem < 0)] )
+
+        # Handle "Horizontal Fill" behavior
+        if neg < 0:
+            if tot < self.xySizPx[0]:
+                var = (self.xySizPx[0] - tot) / abs( neg )
+            else:
+                var = 0.0
+            lenList = [(elem if (elem > 0) else var) for elem in lenList]
+        if self.xySizPx[0] != sum( lenList ):
+            lenList = np.array( lenList ) / tot * self.xySizPx[0]
+        else:
+            lenList = lenList[:]
+
+        if hPadPx > 0.0:
+            padLen = lenList[1]
+        bxs = list()
+        bgn = self.xyLocPx[:]
+        for len_i in lenList:
+            if len_i > 0.0:
+                if hPadPx > 0.0:
+                    if len_i > padLen:
+                        bxs.append(  Box( bgn[:], (len_i, self.xySizPx[1],) )  )
+                else:
+                    bxs.append(  Box( bgn[:], (len_i, self.xySizPx[1],) )  )
+                bgn[0] += len_i
+        return bxs
+
+
+
+class TextBox:
+    """ Block of Text """
+
+    def __init__( self, text, xyLocPx, xySizPx, padding ):
+        """ Set necessary parameters """
+        self.text    = f"{text}"
+        self.xyLocPx = xyLocPx
+        self.xySizPx = xySizPx
+        self.pad_px  = padding
+        self.textLoc = (self.pad_px, self.pad_px,)
+        self.styles  = dict()
+        self.brdrRad = 40
+
+
+    @staticmethod
+    def from_Boxes( boxLst, padding ):
+        """ Get `TextBox`es from `Box`es """
+        rtnBxs = list()
+        for box in boxLst:
+            rtnBxs.append( TextBox( "", box.xyLocPx[:], box.xySizPx[:], padding ) )
+        return rtnBxs
+
+
+    def get_text_start_abs( self ):
+        """ Get the absolute location of the text start """
+        return (self.xyLocPx[0]+self.textLoc[0], self.xyLocPx[1]+self.textLoc[1],)
+
+
+    def get_max_line_length_px( self ):
+        """ How long is a line of text allowed to be? """
+        return self.xySizPx[0]-2*self.pad_px
+
 
 
 
@@ -102,6 +189,12 @@ class ResumeFactory:
         )
 
 
+    def add_TextBox( self, tb : TextBox, layerName = None ):
+        """ Add a textbox to the resume """
+        self.add_styled_rectangle( tb.xyLocPx, tb.xySizPx, tb.styles['border'], tb.brdrRad, layerName )
+        self.add_styled_text( tb.text, tb.styles['text'], tb.get_text_start_abs(), layerName )
+
+
     def test01( self ):
         """ Just draw anything ... """
         self.add_layer( "bio", 1.0 )
@@ -123,6 +216,13 @@ class ResumeFactory:
         self.add_styled_rectangle( (self.xMin+_H_ROW1+_CELL_PAD, self.yMin), (self.textWidth-2*_H_ROW1-2*_CELL_PAD, _H_ROW1), "MainBox", radius = 40, layerName = "bio" )
         self.add_styled_rectangle( (self.xMax-_H_ROW1, self.yMin), (_H_ROW1, _H_ROW1), "MainBox", radius = 40, layerName = "bio" )
         self.save()
+
+    def test03( self ):
+        """ Lay out an example document """
+        _CELL_PAD =  40
+        _H_ROW1   = 300
+        row1      = Box( self.origin, (self.textWidth, _H_ROW1,) )
+        textBoxes = TextBox.from_Boxes( row1.h_divide( [_H_ROW1, self.textWidth-2*_H_ROW1-2*_CELL_PAD,_H_ROW1,], _CELL_PAD ) )
 
 
 
