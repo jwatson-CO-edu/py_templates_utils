@@ -15,8 +15,10 @@
         "_EDITOR_COMMAND": "open -e"
     },
     "Settings": {
-        "_HW_TAG"        : "HW01",
+        "_HW_TAG"        : "HW02",
+        "_LIST_PATHS"    : ["ugrads.txt", "grads.txt"],
         "_PMD_JAVA_RULES": "OOD_Java-Rules.xml",
+        "_RUN_PMD_CHECKS": false,
         "_GET_RECENT"    : true,
         "_REPORT_DIR"    : "output",
         "_N_SEARCH_R"    : 8,
@@ -27,14 +29,35 @@
         "_SRCH_MARGN"    : 60,
         "_OPEN_SNPPT"    : true,
         "_EN_ALL_TST"    : true,
-        "_SHO_CONTRB"    : true
+        "_SHO_CONTRB"    : true,
+        "_BLD_PLUGINS"   : [
+            { 
+                "relPath": "build.gradle", 
+                "sTerms" : ["id","'java'"], 
+                "plugin" : "jacoco" 
+            }
+        ],
+        "_TEST_JOB_CMD": "jacocoTestReport"
     },
     "HW01": {
-        "_LIST_PATHS": ["ugrads.txt", "grads.txt"],
         "_SOURCE_DIR": "src/main/java/polymorphia",
         "_TEST_DIR"  : "src/test/java/polymorphia",
         "_BRANCH_STR": "1",
         "_TOPIC_SRCH": ["name","health","creature","adventurer","battle","fight"],
+        "_TOPIC_XCLD": ["return"]
+    },
+    "HW02": {
+        "_SOURCE_DIR": "src/main/java/polymorphia",
+        "_TEST_DIR"  : "src/test/java/polymorphia",
+        "_BRANCH_STR": "2",
+        "_TOPIC_SRCH": ["inherit","hier","interface","encap","fight","battle","room","maze"],
+        "_TOPIC_XCLD": ["return"]
+    },
+    "HW03": {
+        "_SOURCE_DIR": "src/main/java/polymorphia",
+        "_TEST_DIR"  : "src/test/java/polymorphia",
+        "_BRANCH_STR": "3",
+        "_TOPIC_SRCH": ["inherit","hier","interface","encap","inject","depend"],
         "_TOPIC_XCLD": ["return"]
     }
 }

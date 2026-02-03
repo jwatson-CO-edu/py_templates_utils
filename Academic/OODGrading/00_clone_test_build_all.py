@@ -41,7 +41,9 @@ try:
     _GRADLE_PATH    = config[_USER_SYSTEM]["_GRADLE_PATH"]
     _EDITOR_COMMAND = config[_USER_SYSTEM]["_EDITOR_COMMAND"]
     ### Settings ###
+    _LIST_PATHS     = config["Settings"]["_LIST_PATHS"]
     _PMD_JAVA_RULES = config["Settings"]["_PMD_JAVA_RULES"]
+    _RUN_PMD_CHECKS = config["Settings"]["_RUN_PMD_CHECKS"]
     _GET_RECENT     = config["Settings"]["_GET_RECENT"]
     _REPORT_DIR     = config["Settings"]["_REPORT_DIR"]
     _N_SEARCH_R     = config["Settings"]["_N_SEARCH_R"]
@@ -53,14 +55,20 @@ try:
     _OPEN_SNPPT     = config["Settings"]["_OPEN_SNPPT"]
     _EN_ALL_TST     = config["Settings"]["_EN_ALL_TST"]
     _SHO_CONTRB     = config["Settings"]["_SHO_CONTRB"]
+    _BLD_PLUGINS    = config["Settings"]["_BLD_PLUGINS"]
+    _TEST_JOB_CMD   = config["Settings"]["_TEST_JOB_CMD"]
     ### Assignment ###
     _HW_TAG     = config["Settings"]["_HW_TAG"]
-    _LIST_PATHS = config[_HW_TAG]["_LIST_PATHS"]
     _SOURCE_DIR = config[_HW_TAG]["_SOURCE_DIR"]
     _TEST_DIR   = config[_HW_TAG]["_TEST_DIR"] 
     _BRANCH_STR = config[_HW_TAG]["_BRANCH_STR"]
     _TOPIC_SRCH = config[_HW_TAG]["_TOPIC_SRCH"]
     _TOPIC_XCLD = config[_HW_TAG]["_TOPIC_XCLD"]
+    ### Report ###
+    print()
+    print( f"Default Gradle Path:  {_GRADLE_PATH}" )
+    print( f"Req'd Gradle Plugins: {[item['plugin'] for item in _BLD_PLUGINS if ('plugin' in item)]}" )
+    print()
 except KeyError as err:
     print( f"\n\033[91mFAILED to load config file!, {err}\033[0m\n" )
 
@@ -146,7 +154,7 @@ def run_cmd( ruleStr : str, timeout_s : int = 0, suppressErr : bool = False ) ->
         return { 
             'cmd': ruleStr,
             'err': traceback.format_exc(),
-            'out': out.decode(),
+            'out': out.decode() if len( out ) else "",
         }
     else:
         process = subprocess.Popen( ruleStr, 
@@ -168,6 +176,31 @@ def run_cmd( ruleStr : str, timeout_s : int = 0, suppressErr : bool = False ) ->
 
 
 ########## GRADLE ##################################################################################
+
+def inject_id_entry_after_hit( buildGradlePath : str, searchLst : list[str], injectName : str ):
+    """ Add a name to the plugin table in "build.gradle" """
+    lines = deque()
+    wrLin = deque()
+
+    def p_line_match( lineStr : str ):
+        """ Do all the terms match? """
+        nonlocal searchLst
+        for term in searchLst:
+            if term not in lineStr:
+                return False
+        return True
+
+    with open( buildGradlePath, 'r' ) as f:
+        lines.extend( f.readlines() )
+    for line in lines:
+        wrLin.append( line )
+        if p_line_match( line ):
+            wrLin.append( f"    id '{injectName}'\n" )
+    with open( buildGradlePath, 'w' ) as f:
+        for line in wrLin:
+            f.write( line )
+    print( f"Injected the {injectName} 'id' to {buildGradlePath}!" )
+        
 
 def gradle_test( dirPrefix : str = "" ):
     """ Run all Gradle tests """
@@ -196,6 +229,63 @@ def gradle_test( dirPrefix : str = "" ):
     return res
 
 
+# def gradle_test( dirPrefix : str = "", outPath : str = None ):
+#     """ Run all Gradle tests """
+
+#     ## Change Dir ##
+#     lastdir = os.getcwd() # Cache the current working directory
+#     print( f"Switching from {lastdir} --to-> {dirPrefix}" )
+#     os.chdir( dirPrefix ) # Change the current working directory
+    
+#     ## Inject Plugin(s) ##
+#     for spec in _BLD_PLUGINS:
+#         inject_id_entry_after_hit( spec['relPath'], spec['sTerms'], spec['plugin'] )
+
+#     ## Run Tests ##
+#     loc = "./gradlew"
+#     res = run_cmd( f"chmod a+x gradlew", suppressErr = False )
+#     res = run_cmd( f"{loc} clean", suppressErr = False )
+#     res = run_cmd( f"{loc} build", suppressErr = False )
+#     cmd = f"{loc} clean test {_TEST_JOB_CMD}"
+#     res = run_cmd( cmd, suppressErr = False )
+#     out = deque()
+
+#     if len( res['err'] ):
+#         print( f"ERROR:\n{res['err']}" )
+#     logs   = f"{res['out']}"
+#     lines  = logs.split('\n')
+#     tstLog = ""
+#     failed = False
+#     for line in lines:
+#         if "TestEventLogger" in line:
+#             event = line.split("[TestEventLogger]")[-1].rstrip()
+#             if outPath is not None:
+#                 out.append( event )
+#             if len( event ) > 5:
+#                 tstLog += f"{event}\n"
+#             if "FAIL" in event:
+#                 failed = True
+#                 print( f"{TColor.FAIL}{event}{TColor.ENDC}" )
+#             elif len( event ) > 5:
+#                 print( f"{event}" )
+#     if failed:
+#         res['fail'] = tstLog
+#     if outPath is not None:
+#         with open( outPath, 'w' ) as f:
+#             for event in out:
+#                 f.write( f"{event}\n" )
+#         if failed:
+#             f.write( f"########## FAILURE ##########\n" )
+#             f.write( f"{tstLog}\n" )
+#         print( f"Wrote {len(out)} lines to {outPath}!" )
+
+#     ## Change Back ##
+#     print( f"Switching from {dirPrefix} --to-> {lastdir}" )
+#     os.chdir( lastdir ) # Restore the current working directory
+#     ## Return Results ##
+#     return res
+
+
 def find_main( dirPrefix : str = "" ):
     """ Return the filename with the main function if it exists, Otherwise return None """
     res = run_cmd( f'grep -nir "main(" {dirPrefix}/*' )
@@ -209,65 +299,6 @@ def find_main( dirPrefix : str = "" ):
         return None
     else:
         return None
-    
-
-def prep_build_spec( dirPrefix : str = "", buildFile : str = "build.gradle" ):
-    """ Do I need to tell Gradle where main is? """
-    mainPath = find_main( dirPrefix )
-    if (mainPath is not None):
-        mainFile  = mainPath.split('/')[-1]
-        mainPath  = mainPath.replace( f"{dirPrefix}/", "" )
-        mainPath  = mainPath.replace( f"/{mainFile}", "" )
-        srcDir    = f"{mainPath}"
-        mainPath  = mainPath.replace( "src/", "" )
-        mainClass = mainFile.split('.')[0]
-        chunk = f"\nsourceSets.main.java.srcDirs = ['{srcDir}']\n"
-        chunk += "\njar {" + '\n'
-        chunk += "    manifest {" + '\n'
-        chunk += f"       attributes 'Main-Class': '{srcDir.split('/')[-1]}.{mainClass}'" + '\n'
-        chunk += "    }" + '\n'
-        chunk += "    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }" + '\n'
-        chunk += "}" + '\n'
-        with open( os.path.join( dirPrefix, buildFile ), 'a' ) as f:
-            f.write( chunk )
-    else:
-        print( f"NO MAIN FUNCTION found in {dirPrefix}" )
-
-
-def gradle_build_clean( dirPrefix : str = "" ):
-    """ Clean then Build Gradle project """
-    if len( dirPrefix ):
-        dirPrefix = f"./{dirPrefix}"
-    res = run_cmd( f"{dirPrefix}/gradlew clean build -p {dirPrefix}", suppressErr = True )
-    if "gradlew: not found" in res['err']:
-        res = run_cmd( f"gradle clean build -p {dirPrefix}" )
-    elif len( res['err'] ):
-        print( f"ERROR:\n{res['err']}" )
-    return res
-
-
-def find_the_EXT( ext : str, dirPrefix : str = "" ):
-    """ Return the first EXT found at the directory if it exists, Otherwise return None """
-    pthLst = os.listdir( dirPrefix ) if len( dirPrefix ) else os.listdir()
-    jarFil = [path for path in pthLst if f".{ext}".upper() in str(path).upper()]
-    if len( jarFil ):
-        return jarFil[0].split('/')[-1]
-    else:
-        return None
-
-
-# https://docs.gradle.org/current/samples/sample_building_java_libraries.html#assemble_the_library_jar
-def run_gradle_build( dirPrefix : str = "", jarDir : str = "build/libs", runEXT : str = "JAR" ):
-    """ Run the Java project that resulted from the default Gradle Build """
-    lukPath = os.path.join( dirPrefix, jarDir )
-    jarPath = find_the_EXT( runEXT, lukPath )
-    if (jarPath is not None):
-        result  = run_cmd( f"java -jar {os.path.join( lukPath, jarPath )}" )
-        print( f"{result['out']}" )
-    else:
-        result = {'out': None, 'err': None}
-        print( f"There was NO JAR file at {lukPath}" )
-    return result
 
 
 def inspect_project( dirPrefix : str = "" ):
@@ -382,7 +413,7 @@ def run_PMD_report( dirPrefix : str = "", codeDir : str = "", outDir : str = "",
     while ("No such file" in res['err']):
         path = os.path.dirname( path )
         cmd  = f"{_PMD_PATH} check -d ./{path} -R ./{_PMD_JAVA_RULES} -f text"
-        res  = run_cmd( cmd )
+        res  = run_cmd( cmd, suppressErr=1 )
     out   = res['out']
     lines =  out.split('\n')
     txt   = ""
@@ -855,10 +886,11 @@ if __name__ == "__main__":
                 run_cmd( f"{_EDITOR_COMMAND} {stdSnp}", timeout_s = 3 )
 
             ### Static Analysis ###
-            print( f"About to run code style checks ..." )
-            disp_text_header( f"Static Analsys for {stdNam}", 3, preNL = 1, postNL = 1 )
-            run_PMD_report( dirPrefix = stdDir, codeDir = _SOURCE_DIR, outDir = _REPORT_DIR, studentStr = stdStr )
-            disp_text_header( f"{stdNam} Static Analsys COMPLETE", 3, preNL = 0, postNL = 1 )
+            if _RUN_PMD_CHECKS:
+                print( f"About to run code style checks ..." )
+                disp_text_header( f"Static Analsys for {stdNam}", 3, preNL = 1, postNL = 1 )
+                run_PMD_report( dirPrefix = stdDir, codeDir = _SOURCE_DIR, outDir = _REPORT_DIR, studentStr = stdStr )
+                disp_text_header( f"{stdNam} Static Analsys COMPLETE", 3, preNL = 0, postNL = 1 )
 
             ### Search for Excessive Functions && Classes ###
             disp_text_header( f"Class && Function Lengths for {stdNam}", 3, preNL = 1, postNL = 0 )
