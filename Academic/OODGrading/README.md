@@ -17,10 +17,10 @@ This is to assist course staff in grading many student Java assignments in one s
 
 ### PMD, Static Analysis
 1. `cd /tmp/`
-1. `wget https://github.com/pmd/pmd/releases/download/pmd_releases%2F7.10.0/pmd-dist-7.10.0-bin.zip`
-1. `unzip pmd-dist-7.10.0-bin.zip`
-1. `sudo mv pmd-bin-7.10.0 /opt/`
-1. Add to "~/.bashrc": `alias pmd="/opt/pmd-bin-7.10.0/bin/pmd"`
+1. `wget https://github.com/pmd/pmd/releases/download/pmd_releases%2F7.10.0/pmd-dist-7.21.0-bin.zip`
+1. `unzip pmd-dist-7.21.0-bin.zip`
+1. `sudo mv pmd-bin-7.21.0 /opt/`
+1. Add to "~/.bashrc": `alias pmd="/opt/pmd-bin-7.21.0/bin/pmd"`
 
 ### IntelliJ IDEA, Editor
 1. Download the TAR
