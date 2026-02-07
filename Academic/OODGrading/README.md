@@ -98,7 +98,12 @@ on each line.
 No pull requests are considered after 2026-05-10!
 
 # Change Log
-* 2025-02-07: Added an identifier review to help evaluate good naming conventions. 
+* 2025-02-07: QoL Improvements
+   - Added an identifier review to help evaluate good naming conventions.
+   - Full output not captured and sent to the output directory
+   - Suppressed excessive error output from PMD.
+   - Added more tunable params for PMD.
+   - Retain each assignment's settings as its own nested dictionary.
 * 2025-02-03: Added a "Magic Number" scan! 
 * 2025-04-24: Display relative student contributions (by GitHub login), Fixed bug where including a URL argument in scraped address causes an infinite loop, QoL improvements, Editorial Changes
 * 2025-03-21: Added MacOS (Darwin) config data, IntelliJ path is now set as the first valid of a list of given options, Gradle tests work on some machines and not others! - Reason unknown!, Source files with a search term in their title will have the first `_SRCH_MARGN` lines of the file added to the summary, Corrected zero-based line numbers in summary, Timeout on summary generation
