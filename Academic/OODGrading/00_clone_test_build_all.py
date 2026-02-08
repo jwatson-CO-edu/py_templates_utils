@@ -2,7 +2,7 @@
 
 ##### Imports #####
 ### Standard ###
-import subprocess, os, sys, platform, json, traceback
+import subprocess, os, sys, platform, json, traceback, re
 from pprint import pprint
 from collections import deque
 from pprint import pprint
@@ -41,7 +41,11 @@ try:
     _GRADLE_PATH    = config[_USER_SYSTEM]["_GRADLE_PATH"]
     _EDITOR_COMMAND = config[_USER_SYSTEM]["_EDITOR_COMMAND"]
     ### Settings ###
+    _LIST_PATHS     = config["Settings"]["_LIST_PATHS"]
     _PMD_JAVA_RULES = config["Settings"]["_PMD_JAVA_RULES"]
+    _RUN_PMD_CHECKS = config["Settings"]["_RUN_PMD_CHECKS"]
+    _PMD_JAVA_VER   = config["Settings"]["_PMD_JAVA_VER"]
+    _PMD_HIDE_ERROR = config["Settings"]["_PMD_HIDE_ERROR"]
     _GET_RECENT     = config["Settings"]["_GET_RECENT"]
     _REPORT_DIR     = config["Settings"]["_REPORT_DIR"]
     _N_SEARCH_R     = config["Settings"]["_N_SEARCH_R"]
@@ -53,14 +57,21 @@ try:
     _OPEN_SNPPT     = config["Settings"]["_OPEN_SNPPT"]
     _EN_ALL_TST     = config["Settings"]["_EN_ALL_TST"]
     _SHO_CONTRB     = config["Settings"]["_SHO_CONTRB"]
+    _BLD_PLUGINS    = config["Settings"]["_BLD_PLUGINS"]
+    _SCAN_MAGIC     = config["Settings"]["_SCAN_MAGIC"]
+    _NAMES_REPORT   = config["Settings"]["_NAMES_REPORT"]
     ### Assignment ###
     _HW_TAG     = config["Settings"]["_HW_TAG"]
-    _LIST_PATHS = config[_HW_TAG]["_LIST_PATHS"]
     _SOURCE_DIR = config[_HW_TAG]["_SOURCE_DIR"]
     _TEST_DIR   = config[_HW_TAG]["_TEST_DIR"] 
     _BRANCH_STR = config[_HW_TAG]["_BRANCH_STR"]
     _TOPIC_SRCH = config[_HW_TAG]["_TOPIC_SRCH"]
     _TOPIC_XCLD = config[_HW_TAG]["_TOPIC_XCLD"]
+    ### Report ###
+    print()
+    print( f"Default Gradle Path:  {_GRADLE_PATH}" )
+    print( f"Req'd Gradle Plugins: {[item['plugin'] for item in _BLD_PLUGINS if ('plugin' in item)]}" )
+    print()
 except KeyError as err:
     print( f"\n\033[91mFAILED to load config file!, {err}\033[0m\n" )
 
@@ -80,6 +91,64 @@ class TColor:
     ENDC      = '\033[0m'
     BOLD      = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+class Tee:
+    """ Captures `stdout` to a file while still displaying it """
+    # WARNING, CLAUDE SLOP: https://claude.ai/share/bf70a9b8-2f1e-4b02-b449-ffb541df59a9
+
+    def set_alt_file( self, altPath = None ):
+        """ Set the alternate file where text is redirected """
+        self.files = self.files[:1]
+        if altPath is not None:
+            try:
+                f = open( altPath, 'w' )
+            except Exception:
+                f = None
+            if f is not None:
+                self.files.append(f)
+
+    def attach( self ):
+        """ Cache original `stdout` file and replace with self """
+        self.origF = sys.stdout
+        sys.stdout = self
+
+
+    def detach( self ): 
+        """ Restore the original `stdout` file """
+        if self.origF is not None:
+            sys.stdout = self.origF
+
+
+    def __init__( self, altPath = None ):
+        """ Open file and attach """
+        self.files = [sys.stdout,]
+        self.origF = None
+        self.set_alt_file( altPath )
+        self.attach()
+        self.ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
+
+
+    def __del__( self ):
+        """ Detach when erased """
+        self.detach()
+
+    
+    def write( self, data ):
+        """ Tee data to all files """
+        plainData = self.ansi_escape.sub( '', data )
+        for i, f in enumerate( self.files ):
+            if i == 0:
+                f.write( data )
+            else:
+                f.write( plainData )
+            f.flush()
+    
+
+    def flush( self ):
+        """ Flush all write buffers """
+        for f in self.files:
+            f.flush()
 
 
 
@@ -146,7 +215,7 @@ def run_cmd( ruleStr : str, timeout_s : int = 0, suppressErr : bool = False ) ->
         return { 
             'cmd': ruleStr,
             'err': traceback.format_exc(),
-            'out': out.decode(),
+            'out': out.decode() if len( out ) else "",
         }
     else:
         process = subprocess.Popen( ruleStr, 
@@ -168,6 +237,31 @@ def run_cmd( ruleStr : str, timeout_s : int = 0, suppressErr : bool = False ) ->
 
 
 ########## GRADLE ##################################################################################
+
+def inject_id_entry_after_hit( buildGradlePath : str, searchLst : list[str], injectName : str ):
+    """ Add a name to the plugin table in "build.gradle" """
+    lines = deque()
+    wrLin = deque()
+
+    def p_line_match( lineStr : str ):
+        """ Do all the terms match? """
+        nonlocal searchLst
+        for term in searchLst:
+            if term not in lineStr:
+                return False
+        return True
+
+    with open( buildGradlePath, 'r' ) as f:
+        lines.extend( f.readlines() )
+    for line in lines:
+        wrLin.append( line )
+        if p_line_match( line ):
+            wrLin.append( f"    id '{injectName}'\n" )
+    with open( buildGradlePath, 'w' ) as f:
+        for line in wrLin:
+            f.write( line )
+    print( f"Injected the {injectName} 'id' to {buildGradlePath}!" )
+        
 
 def gradle_test( dirPrefix : str = "" ):
     """ Run all Gradle tests """
@@ -209,65 +303,6 @@ def find_main( dirPrefix : str = "" ):
         return None
     else:
         return None
-    
-
-def prep_build_spec( dirPrefix : str = "", buildFile : str = "build.gradle" ):
-    """ Do I need to tell Gradle where main is? """
-    mainPath = find_main( dirPrefix )
-    if (mainPath is not None):
-        mainFile  = mainPath.split('/')[-1]
-        mainPath  = mainPath.replace( f"{dirPrefix}/", "" )
-        mainPath  = mainPath.replace( f"/{mainFile}", "" )
-        srcDir    = f"{mainPath}"
-        mainPath  = mainPath.replace( "src/", "" )
-        mainClass = mainFile.split('.')[0]
-        chunk = f"\nsourceSets.main.java.srcDirs = ['{srcDir}']\n"
-        chunk += "\njar {" + '\n'
-        chunk += "    manifest {" + '\n'
-        chunk += f"       attributes 'Main-Class': '{srcDir.split('/')[-1]}.{mainClass}'" + '\n'
-        chunk += "    }" + '\n'
-        chunk += "    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }" + '\n'
-        chunk += "}" + '\n'
-        with open( os.path.join( dirPrefix, buildFile ), 'a' ) as f:
-            f.write( chunk )
-    else:
-        print( f"NO MAIN FUNCTION found in {dirPrefix}" )
-
-
-def gradle_build_clean( dirPrefix : str = "" ):
-    """ Clean then Build Gradle project """
-    if len( dirPrefix ):
-        dirPrefix = f"./{dirPrefix}"
-    res = run_cmd( f"{dirPrefix}/gradlew clean build -p {dirPrefix}", suppressErr = True )
-    if "gradlew: not found" in res['err']:
-        res = run_cmd( f"gradle clean build -p {dirPrefix}" )
-    elif len( res['err'] ):
-        print( f"ERROR:\n{res['err']}" )
-    return res
-
-
-def find_the_EXT( ext : str, dirPrefix : str = "" ):
-    """ Return the first EXT found at the directory if it exists, Otherwise return None """
-    pthLst = os.listdir( dirPrefix ) if len( dirPrefix ) else os.listdir()
-    jarFil = [path for path in pthLst if f".{ext}".upper() in str(path).upper()]
-    if len( jarFil ):
-        return jarFil[0].split('/')[-1]
-    else:
-        return None
-
-
-# https://docs.gradle.org/current/samples/sample_building_java_libraries.html#assemble_the_library_jar
-def run_gradle_build( dirPrefix : str = "", jarDir : str = "build/libs", runEXT : str = "JAR" ):
-    """ Run the Java project that resulted from the default Gradle Build """
-    lukPath = os.path.join( dirPrefix, jarDir )
-    jarPath = find_the_EXT( runEXT, lukPath )
-    if (jarPath is not None):
-        result  = run_cmd( f"java -jar {os.path.join( lukPath, jarPath )}" )
-        print( f"{result['out']}" )
-    else:
-        result = {'out': None, 'err': None}
-        print( f"There was NO JAR file at {lukPath}" )
-    return result
 
 
 def inspect_project( dirPrefix : str = "" ):
@@ -372,17 +407,27 @@ def count_LOC_contributions( dirPrefix : str = "", deleteFactor = 0.125 ):
     return rtn
 
 
+
 ########## STATIC ANALYSIS #########################################################################
 
 def run_PMD_report( dirPrefix : str = "", codeDir : str = "", outDir : str = "", studentStr : str = "" ):
     """ Run a PMD report for Java """
+
+    ## Set Environment Vars ## https://pmd.github.io/pmd/pmd_languages_configuration.html#java-language-properties
+    os.environ["PMD_JAVA_X_TYPE_INFERENCE_LOGGING"] = "DISABLED"
+    os.environ["PMD_JAVA_X_STRICT_TYPE_RES"]        = "false"
+    # os.environ["PMD_JAVA_LOMBOK"]                   = "false"
+
+    ## Run Analysis ##
     path  = os.path.join( dirPrefix, codeDir )
-    cmd   = f"{_PMD_PATH} check -d ./{path} -R ./{_PMD_JAVA_RULES} -f text"
-    res   = run_cmd( cmd )
+    # cmd   = f"{_PMD_PATH} check -d ./{path} -R ./{_PMD_JAVA_RULES} -f text"
+    cmd   = f"{_PMD_PATH} check --use-version=java-{_PMD_JAVA_VER} -d ./{path} -R ./{_PMD_JAVA_RULES} -f text"
+    res   = run_cmd( cmd, suppressErr = _PMD_HIDE_ERROR )
     while ("No such file" in res['err']):
         path = os.path.dirname( path )
-        cmd  = f"{_PMD_PATH} check -d ./{path} -R ./{_PMD_JAVA_RULES} -f text"
-        res  = run_cmd( cmd )
+        # cmd  = f"{_PMD_PATH} check -d ./{path} -R ./{_PMD_JAVA_RULES} -f text"
+        cmd  = f"{_PMD_PATH} check --use-version=java-{_PMD_JAVA_VER} -d ./{path} -R ./{_PMD_JAVA_RULES} -f text"
+        res  = run_cmd( cmd, suppressErr = _PMD_HIDE_ERROR )
     out   = res['out']
     lines =  out.split('\n')
     txt   = ""
@@ -516,6 +561,351 @@ def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : 
     return rtnLines
     
 
+_RESERVED_CHARS   = ['(', ')', ';', '{', '}', ',',]
+_RESERVED_SYMBOLS = ['//',]
+
+
+def tokenize( expr : str ):
+    """ Return a list of tokens found in the expr """
+    expr  += ' ' # Terminator Hack 
+    tknDqu = deque()
+    token  = ""
+
+    def p_res_char( char : str ):
+        """ Return True if the token is reserved """
+        if char in _RESERVED_CHARS:
+            return True
+        return False
+
+    def store_token():
+        """ Add a token to the collection """
+        nonlocal tknDqu, token
+        if len( token ):
+            tknDqu.append( token )
+        token = ""
+
+    for c in expr:
+        if p_res_char( c ):
+            store_token()
+            tknDqu.append( c )
+        elif c.isspace():
+            store_token()
+        else:
+            token += c
+            if token in _RESERVED_SYMBOLS:
+                store_token() # This obviates the second sweep in CPluscal!
+
+    return list( tknDqu )
+
+
+def p_has_parens( tknLst : list[str] | str ):
+    """ Is there at least one paren token? """
+    if isinstance( tknLst, str ):
+        tknLst = tokenize( tknLst )
+    if ('(' in tknLst) or (')' in tknLst):
+        return True
+    return False
+
+
+def trim_comment_from_tokens( tknLst : list[str] ):
+    """ Take remove end of line comment that was tokenized """
+    if '//' in tknLst:
+        return tknLst[ :tknLst.index('//') ]
+    return tknLst
+
+
+def get_paren_contents( tknLst : list[str] | str ):
+    """ Get the contents of the outermost parens as a list of tokens """
+    if isinstance( tknLst, str ):
+        tknLst = trim_comment_from_tokens( tokenize( tknLst ) )
+    depth  = 0
+    rtnLst = deque()
+    start  = False
+    for token in tknLst:
+        if token == ')':
+            depth -= 1
+        if depth > 0:
+            rtnLst.append( token )
+            start = True
+        elif (depth < 0):
+            print( f"\n'get_paren_contents': UNBALANCED PARENS!, {tknLst}\n" )
+            return None
+        elif (depth == 0) and start:
+            break
+        if token == '(':
+            depth += 1
+    return list( rtnLst )
+
+
+def p_has_java_access_modifier( line : str ):
+    """ Does this line specify class access? """
+    for modifier in ['public','private','protected','static','final',]:
+        if modifier in line:
+            return True
+    return False
+
+
+def p_class_interface_def_begin( line : str ):
+    """ Is this the beginning of a class def? """
+    return (p_has_java_access_modifier( line ) and (('class' in line) or ('interface' in line)))
+
+
+def get_class_interface_name( line : str ):
+    """ Get the class name from the line """
+    if ('class' in line):
+        tokens = tokenize( line )
+        for i, token in enumerate( tokens ):
+            if (token == 'class') or (token == 'interface'):
+                return tokens[i+1]
+        return None
+    else:
+        return None
+    
+
+def p_primitive_def( line : str ):
+    """ Does this line have a primitive type name? """
+    for primName in ['byte','short','int','long','float','double','char','String','boolean',
+                     'Integer','Boolean','Float','Double',]: 
+        if primName in line:
+            return True
+    return False
+    
+
+def p_number_str( num : str ) -> bool:
+    """ Does the string represent a number? """
+    try:
+        int( num )
+        return True
+    except ValueError:
+        try:
+            float( num )
+            return True
+        except ValueError:
+            return False
+
+
+
+########## PROJECT / FILE STRUCTURE ################################################################
+
+def get_all_file_paths( directory ) -> list[str]:
+    """ Return a list of full leaf paths under directory, Recursive """
+    # Source: https://www.google.com/search?client=firefox-b-1-lm&channel=entpr&q=python+list+of+paths+from+recursive+walk
+    file_paths = []
+    for dirpath, _, filenames in os.walk( directory ):
+        for filename in filenames:
+            file_path = os.path.join( dirpath, filename )
+            file_paths.append( file_path )
+    return sorted( file_paths ) # Dir walking is NOT deterministic!
+
+
+def get_all_EXT_paths( directory, fileExt : str = "java" ) -> list[str]:
+    jvPaths  = [path for path in get_all_file_paths( directory ) if f".{fileExt}".lower() in path.lower()]
+    while not len( jvPaths ):
+        directory  = os.path.dirname( directory )
+        jvPaths = [path for path in get_all_file_paths( directory ) if f".{fileExt}".lower() in path.lower()]
+    return jvPaths
+
+
+
+########## CODE STRUCTURE ANALYSIS #################################################################
+
+def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], searchOver : int = 40, fileExt : str = "java",
+                                   excludeTerms : list[str] = None ):
+    """ Get identified chunks in the code """
+    rtnStr  = ""
+    jvPaths = get_all_EXT_paths( srcDir, fileExt )
+    exclude = excludeTerms if (excludeTerms is not None) else list()
+    for path in jvPaths:
+        rtnStr += f"///// {path} /////\n"
+        with open( path, 'r' ) as f_i:
+            src_i = f"{f_i.read()}"
+            res_i = grab_identified_sections_of_java_source( src_i, searchTerms, searchOver, excludeTerms )
+            for j, chunk_j in enumerate( res_i['chunks'] ):
+                range_j = res_i['ranges'][j]
+                rtnStr += f"/// Lines: [{range_j[0]+1}, {range_j[1]}] ///\n"
+                for k, line_k in enumerate( chunk_j ):
+                    found = False
+                    kWord = ""
+                    for term in searchTerms:
+                        if term.lower() in f"{line_k}".lower():
+                            found = True
+                            kWord = term
+                            break
+                    if found:
+                        for term in exclude:
+                            if term.lower() in f"{line_k}".lower():
+                                found = False
+                                break
+                    rtnStr += f"/*{range_j[0]+k+1: 4}*/\t{line_k}{f' // << kw: {kWord} <<' if found else ''}\n"
+                rtnStr += f"\n"
+            if not len( res_i['chunks'] ):
+                found = False
+                kWord = ""
+                for term in searchTerms:
+                    if term.lower() in f"{path}".lower():
+                        found = True
+                        kWord = term
+                        break
+                if found:
+                    lines, _ = split_lines_with_depth_change( src_i )
+                    rtnStr += f' // vvvvv-- kw: {kWord} in "{str( path ).split("/")[-1]}"! --vvvvv\n'
+                    for k in range( min( _SRCH_MARGN, len( lines ) ) ):
+                        line_k = lines[k]
+                        rtnStr += f"/*{k+1: 4}*/\t{line_k}\n"
+
+
+        rtnStr += f"\n\n"
+    return rtnStr
+
+
+def scan_source_for_magic_args( srcDir : str, fileExt : str = "java" ) -> str:
+    """ Get identified chunks in the code """
+    rtnStr  = ""
+    jvPaths = get_all_EXT_paths( srcDir, fileExt )
+
+    def p_skip( line : str ):
+        if ('assert' in line) or ('for' in line):
+            return True
+        return False
+
+    for path in jvPaths:
+        start = False
+        if '/test/' in path:
+            continue
+        with open( path, 'r' ) as f_i:
+            for i, line in enumerate( f_i.readlines() ):
+                contents = get_paren_contents( line )
+                if contents is None:
+                    continue
+                for token in contents:
+                    if p_number_str( token ) and (not p_skip( line )):
+                        if not start:
+                            rtnStr += f"///// {path} /////\n\n"
+                            start = True
+                        rtnStr += f"Magic Number? (@ Line {i+1}): {line}\n"
+                        break
+            if start:
+                rtnStr += '\n'
+    return rtnStr
+
+
+def count_block_lines( srcDir : str, fileExt : str = "java" ):
+    """ Count the number of lines in each block """
+    rtnLst  = deque()
+    jvPaths = get_all_EXT_paths( srcDir, fileExt )
+    for path in jvPaths:
+        with open( path, 'r' ) as f_i:
+            src_i = f"{f_i.read()}"
+            lns_i, dpt_i = split_lines_with_depth_change( src_i )
+            stk_i = deque()
+            for j, lin_j in enumerate( lns_i ):
+                dep_j = dpt_i[j]
+                # Push an opened block onto the stack
+                if dep_j > 0:
+                    stk_i.append({
+                        'path'  : f"{path}".split('/')[-1],
+                        'begin' : j+1,
+                        'lines' : deque(),
+                    })
+                # All existing stack elems accrue the line
+                for itm_k in stk_i:
+                    itm_k['lines'].append( lin_j )
+                # Pop a closed block from the stack
+                if (dep_j < 0) and len( stk_i ):
+                    rtnLst.append( stk_i.pop() )
+    rtnLst = list( rtnLst )
+    rtnLst.sort( key = lambda x: len( x['lines'] ), reverse = True )
+    return rtnLst
+
+
+def report_block_sizes( srcDir : str, fileExt : str = "java" ):
+    """ Print a report of all code blocks """
+    blocks  = count_block_lines( srcDir, fileExt )
+    wdtPath = max( [len(elem['path']) for elem in blocks] ) if len( blocks ) else 3
+    wdtSize = len( f"{len(blocks[0]['lines'])}" ) if len( blocks ) else 3
+    for block in blocks[:_N_BIG_BLK]:
+        path = block['path']
+        size = len( block['lines'] )
+        print( f"{path: <{wdtPath}} : {size: >{wdtSize}} : On Line {block['begin']: >{wdtSize}}" )
+
+
+def get_all_EXT_lines( srcDir : str, fileExt : str = "java", strip : bool = False ) -> dict[str,list[str]]:
+    """ Return a dict of all lines of each file in `srcDir` matching `fileExt` """
+    lineDict = dict()
+    jvPaths = get_all_EXT_paths( srcDir, fileExt )
+    for path in jvPaths:
+        lines = list()
+        with open( path, 'r' ) as f_i:
+            if strip:
+                lines = [line.strip() for line in f_i.readlines()]
+            else:
+                lines = f_i.readlines()
+        lineDict[ os.path.join( srcDir, path ) ] = lines
+    return lineDict
+
+
+def get_user_defined_types( srcDir : str, fileExt : str = "java" ):
+    """ Return a list of User Defined Types """
+    rtnLst   = deque()
+    lineDict = get_all_EXT_lines( srcDir, fileExt, strip = True )
+    for lines in lineDict.values():
+        for line in lines:
+            if p_class_interface_def_begin( line ):
+                clsNam = get_class_interface_name( line )
+                if clsNam is not None:
+                    rtnLst.append( clsNam )
+    return list( rtnLst )          
+
+
+def report_identifiers_and_signatures( srcDir : str, fileExt : str = "java" ):
+    """ Get a string representing the hierarchy of identifiers """
+    lineDict = get_all_EXT_lines( srcDir, fileExt, strip = True )
+    usrTypes = get_user_defined_types( srcDir, fileExt )
+    rtnStr   = ""
+    depth    = 0
+
+    def p_user_def( line : str ):
+        """ Is a variable of a user type being declared? """
+        if (not p_class_interface_def_begin( line )) and p_has_java_access_modifier( line ):
+            tokens = tokenize( line )
+            for token in tokens:
+                if token in usrTypes:
+                    return True
+            return False
+        else:
+            return False
+
+    def report_line( line : str, linNum : int = None ):
+        """ Append the line to output """
+        nonlocal depth, rtnStr
+        if linNum is None:
+            rtnStr += '\t'*depth + line.strip() + '\n'
+        else:
+            rtnStr += '\t'*depth + line.strip() + f"    // Line {linNum}" + '\n'
+
+
+    def p_skip( line : str ):
+        """ We don't want to read these """
+        if ('.' in line) or ('//' in line) or ('assert' in line) or ('for' in line) or ('return' in line):
+            return True
+        return False
+
+    for path, lines in lineDict.items():
+        depth = 0
+        rtnStr +=  f"\n### {path} ###\n"
+        for lNum, line in enumerate( lines ):
+            
+            if (p_class_interface_def_begin( line ) or p_user_def( line ) or p_primitive_def( line )) and (not p_skip( line )):
+                report_line( line, lNum+1 )
+
+            tokens = tokenize( line )
+            delDep = tokens.count('{') - tokens.count('}')
+            depth += delDep
+            depth = max( depth, 0 )
+
+    return rtnStr
+
+    
 
 ########## UTILITIES && FEATURES ###################################################################
 
@@ -620,112 +1010,6 @@ def run_menu( students ):
     return rtnState
 
 
-def get_all_file_paths( directory ):
-    # Source: https://www.google.com/search?client=firefox-b-1-lm&channel=entpr&q=python+list+of+paths+from+recursive+walk
-    file_paths = []
-    for dirpath, _, filenames in os.walk( directory ):
-        for filename in filenames:
-            file_path = os.path.join( dirpath, filename )
-            file_paths.append( file_path )
-    return file_paths
-
-
-def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], searchOver : int = 40, fileExt : str = "java",
-                                   excludeTerms : list[str] = None ):
-    """ Get identified chunks in the code """
-    rtnStr   = ""
-    jvPaths  = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
-    exclude  = excludeTerms if (excludeTerms is not None) else list()
-    while not len( jvPaths ):
-        srcDir  = os.path.dirname( srcDir )
-        jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
-    for path in jvPaths:
-        rtnStr += f"///// {path} /////\n"
-        with open( path, 'r' ) as f_i:
-            src_i = f"{f_i.read()}"
-            res_i = grab_identified_sections_of_java_source( src_i, searchTerms, searchOver, excludeTerms )
-            for j, chunk_j in enumerate( res_i['chunks'] ):
-                range_j = res_i['ranges'][j]
-                rtnStr += f"/// Lines: [{range_j[0]+1}, {range_j[1]}] ///\n"
-                for k, line_k in enumerate( chunk_j ):
-                    found = False
-                    kWord = ""
-                    for term in searchTerms:
-                        if term.lower() in f"{line_k}".lower():
-                            found = True
-                            kWord = term
-                            break
-                    if found:
-                        for term in exclude:
-                            if term.lower() in f"{line_k}".lower():
-                                found = False
-                                break
-                    rtnStr += f"/*{range_j[0]+k+1: 4}*/\t{line_k}{f' // << kw: {kWord} <<' if found else ''}\n"
-                rtnStr += f"\n"
-            if not len( res_i['chunks'] ):
-                found = False
-                kWord = ""
-                for term in searchTerms:
-                    if term.lower() in f"{path}".lower():
-                        found = True
-                        kWord = term
-                        break
-                if found:
-                    lines, _ = split_lines_with_depth_change( src_i )
-                    rtnStr += f' // vvvvv-- kw: {kWord} in "{str( path ).split("/")[-1]}"! --vvvvv\n'
-                    for k in range( min( _SRCH_MARGN, len( lines ) ) ):
-                        line_k = lines[k]
-                        rtnStr += f"/*{k+1: 4}*/\t{line_k}\n"
-
-
-        rtnStr += f"\n\n"
-    return rtnStr
-
-
-def count_block_lines( srcDir : str, searchOver : int = 3, fileExt : str = "java" ):
-    """ Count the number of lines in each block """
-    rtnLst  = deque()
-    jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
-    while not len( jvPaths ):
-        srcDir  = os.path.dirname( srcDir )
-        jvPaths = [path for path in get_all_file_paths( srcDir ) if f".{fileExt}".lower() in path.lower()]
-    for path in jvPaths:
-        with open( path, 'r' ) as f_i:
-            src_i = f"{f_i.read()}"
-            lns_i, dpt_i = split_lines_with_depth_change( src_i )
-            stk_i = deque()
-            for j, lin_j in enumerate( lns_i ):
-                dep_j = dpt_i[j]
-                # Push an opened block onto the stack
-                if dep_j > 0:
-                    # bgn_i = j # max( j-searchOver, 0 )
-                    stk_i.append({
-                        'path'  : f"{path}".split('/')[-1],
-                        'begin' : j+1,
-                        'lines' : deque(),
-                    })
-                # All existing stack elems accrue the line
-                for itm_k in stk_i:
-                    itm_k['lines'].append( lin_j )
-                # Pop a closed block from the stack
-                if (dep_j < 0) and len( stk_i ):
-                    rtnLst.append( stk_i.pop() )
-    rtnLst = list( rtnLst )
-    rtnLst.sort( key = lambda x: len( x['lines'] ), reverse = True )
-    return rtnLst
-
-
-def report_block_sizes( srcDir : str, searchOver : int = 3, fileExt : str = "java" ):
-    """ Print a report of all code blocks """
-    blocks  = count_block_lines( srcDir, searchOver, fileExt )
-    wdtPath = max( [len(elem['path']) for elem in blocks] ) if len( blocks ) else 3
-    wdtSize = len( f"{len(blocks[0]['lines'])}" ) if len( blocks ) else 3
-    for block in blocks[:_N_BIG_BLK]:
-        path = block['path']
-        size = len( block['lines'] )
-        print( f"{path: <{wdtPath}} : {size: >{wdtSize}} : On Line {block['begin']: >{wdtSize}}" )
-
-
 def enable_all_tests( tstDir : str, fileExt : str = "java" ):
     """ Find all `@Disable`d tests and comment out the decorator """
     jvPaths = [path for path in get_all_file_paths( tstDir ) if f".{fileExt}".lower() in str(path).lower()]
@@ -752,8 +1036,6 @@ def enable_all_tests( tstDir : str, fileExt : str = "java" ):
 
 
 
-
-
 ########## MAIN ####################################################################################
 
 
@@ -764,14 +1046,18 @@ if __name__ == "__main__":
     sleep( 0.125 ) # Error about missing directory, Why would this take time?
 
     htPaths = [path for path in os.listdir() if ".html" in path]
+    grPaths = [path for path in htPaths if "assignmentgroup" in path]
 
     disp_text_header( f"Begin Evaluation of {_LIST_PATHS}", 15, preNL = 1, postNL = 2 )
+
 
     for _LIST_PATH in _LIST_PATHS:
         disp_text_header( f"About to process {_LIST_PATH}!!", 10, preNL = 1, postNL = 1 )
         students = get_ordered_students( _LIST_PATH )
         Nstdnt   = len( students )
+        Ngroup   = len( grPaths  )
         i        = 0
+        j        = 0
         reverse  = False
 
         # Allow search/cancel/quit at the start of each list, Prev/Redo are **disabled** here!
@@ -784,27 +1070,46 @@ if __name__ == "__main__":
             print( f">>> SKIPPED {_LIST_PATH} !! >>>" )
         
         # Begin normal list iteration
-        while i < Nstdnt:
-            print( f"... Iteration {i} ..." )
-            student = students[i]
+        while (i < Nstdnt) or (j < Ngroup):
+            print( f"... Iteration {i+j} ..." )
 
-            ### Fetch Submission ###
-            stdStr = get_student_str( student )
-            stdNam = get_student_name( student )
-            stPath = None
-            disp_text_header( f"Grading {stdNam} ...", 5, preNL = 1, postNL = 0 )
-            for hPath in htPaths:
-                if stdStr in hPath:
-                    stPath  = hPath
-                    reverse = False
-                    break
-            if stPath is None:
-                disp_text_header( f"There was NO SUBMISSION for {stdNam}!!", 5, preNL = 0, postNL = 1 )
+            if (i < Nstdnt):
+
+                student = students[i]
+
+                ### Fetch Submission ###
+                stdStr = get_student_str( student )
+                stdNam = get_student_name( student )
+                stPath = None
+                captur = Tee( f"{_REPORT_DIR}/{stdStr}_full_report.txt" )
+
+                disp_text_header( f"Grading {stdNam} ...", 5, preNL = 1, postNL = 0 )
+                for hPath in htPaths:
+                    if stdStr in hPath:
+                        stPath  = hPath
+                        reverse = False
+                        break
+                if stPath is None:
+                    disp_text_header( f"There was NO SUBMISSION for {stdNam}!!", 5, preNL = 0, postNL = 1 )
+                    if not reverse:
+                        i += 1
+                    else:
+                        i -= 1
+                    continue
+                
+            elif (j < Ngroup):
+
+                ### Fetch Submission ###
+                stdStr = grPaths[j].split('/')[-1]
+                stdNam = stdStr
+                stPath = grPaths[j]
+                captur = Tee( f"{_REPORT_DIR}/{stdStr}_full_report.txt" )
+
                 if not reverse:
-                    i += 1
+                    j += 1
                 else:
-                    i -= 1
-                continue
+                    j -= 1
+
 
             ### Fetch Repo ###
             stAddr = scrape_repo_address( stPath )
@@ -854,15 +1159,32 @@ if __name__ == "__main__":
             if _OPEN_SNPPT:
                 run_cmd( f"{_EDITOR_COMMAND} {stdSnp}", timeout_s = 3 )
 
+            ### Scan for Magic Numbers ###
+            if _SCAN_MAGIC:
+                mgcSrc = scan_source_for_magic_args( stdDir )
+                if len( mgcSrc ):
+                    disp_text_header( f"Magic Number Scan for {stdNam}", 3, preNL = 1, postNL = 1 )
+                    print( mgcSrc )
+                    disp_text_header( f"{stdNam} Magic Number Scan COMPLETE", 3, preNL = 0, postNL = 1 )
+
+            ### Report Identifiers ###
+            if _NAMES_REPORT:
+                namRep = report_identifiers_and_signatures( stdDir, "java" )
+                if len( namRep ):
+                    disp_text_header( f"Identifier Report for {stdNam}", 3, preNL = 1, postNL = 1 )
+                    print( namRep )
+                    disp_text_header( f"{stdNam} Identifier Report COMPLETE", 3, preNL = 0, postNL = 1 )
+
             ### Static Analysis ###
-            print( f"About to run code style checks ..." )
-            disp_text_header( f"Static Analsys for {stdNam}", 3, preNL = 1, postNL = 1 )
-            run_PMD_report( dirPrefix = stdDir, codeDir = _SOURCE_DIR, outDir = _REPORT_DIR, studentStr = stdStr )
-            disp_text_header( f"{stdNam} Static Analsys COMPLETE", 3, preNL = 0, postNL = 1 )
+            if _RUN_PMD_CHECKS:
+                print( f"About to run code style checks ..." )
+                disp_text_header( f"Static Analsys for {stdNam}", 3, preNL = 1, postNL = 1 )
+                run_PMD_report( dirPrefix = stdDir, codeDir = _SOURCE_DIR, outDir = _REPORT_DIR, studentStr = stdStr )
+                disp_text_header( f"{stdNam} Static Analsys COMPLETE", 3, preNL = 0, postNL = 1 )
 
             ### Search for Excessive Functions && Classes ###
             disp_text_header( f"Class && Function Lengths for {stdNam}", 3, preNL = 1, postNL = 0 )
-            report_block_sizes( os.path.join( stdDir, _SOURCE_DIR ), searchOver = 2 )
+            report_block_sizes( os.path.join( stdDir, _SOURCE_DIR ) )
             disp_text_header( f"{stdNam} Verbosity Check COMPLETE", 3, preNL = 0, postNL = 1 )
 
             ### Show LOC Contributions by Student ###
@@ -900,6 +1222,8 @@ if __name__ == "__main__":
                 continue
             
             i += stateChange['iDelta']
+
+            captur = None
 
         disp_text_header( f"COMPLETED {_LIST_PATH}!!", 10, preNL = 1, postNL = 2 )
     disp_text_header( f"Student Evaluation of {_LIST_PATHS} COMPLETED!!", 15, preNL = 1, postNL = 2 )

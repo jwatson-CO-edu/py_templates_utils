@@ -5,7 +5,7 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
 
-    <description>Static Analysis Ruleset for CSCI 4/5448, Object Oriented Design (Java)</description>
+    <description>Static Analysis Ruleset for CSCI 4/5448, Object Oriented Analysis + Design (Java)</description>
 
     <!-- ////////// RULES ////////////////////////////////////////////////////////////////////// -->
 
