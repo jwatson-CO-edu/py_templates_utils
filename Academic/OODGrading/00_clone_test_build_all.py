@@ -290,6 +290,63 @@ def gradle_test( dirPrefix : str = "" ):
     return res
 
 
+# def gradle_test( dirPrefix : str = "", outPath : str = None ):
+#     """ Run all Gradle tests """
+
+#     ## Change Dir ##
+#     lastdir = os.getcwd() # Cache the current working directory
+#     print( f"Switching from {lastdir} --to-> {dirPrefix}" )
+#     os.chdir( dirPrefix ) # Change the current working directory
+    
+#     ## Inject Plugin(s) ##
+#     for spec in _BLD_PLUGINS:
+#         inject_id_entry_after_hit( spec['relPath'], spec['sTerms'], spec['plugin'] )
+
+#     ## Run Tests ##
+#     loc = "./gradlew"
+#     res = run_cmd( f"chmod a+x gradlew", suppressErr = False )
+#     res = run_cmd( f"{loc} clean", suppressErr = False )
+#     res = run_cmd( f"{loc} build", suppressErr = False )
+#     cmd = f"{loc} clean test {_TEST_JOB_CMD}"
+#     res = run_cmd( cmd, suppressErr = False )
+#     out = deque()
+
+#     if len( res['err'] ):
+#         print( f"ERROR:\n{res['err']}" )
+#     logs   = f"{res['out']}"
+#     lines  = logs.split('\n')
+#     tstLog = ""
+#     failed = False
+#     for line in lines:
+#         if "TestEventLogger" in line:
+#             event = line.split("[TestEventLogger]")[-1].rstrip()
+#             if outPath is not None:
+#                 out.append( event )
+#             if len( event ) > 5:
+#                 tstLog += f"{event}\n"
+#             if "FAIL" in event:
+#                 failed = True
+#                 print( f"{TColor.FAIL}{event}{TColor.ENDC}" )
+#             elif len( event ) > 5:
+#                 print( f"{event}" )
+#     if failed:
+#         res['fail'] = tstLog
+#     if outPath is not None:
+#         with open( outPath, 'w' ) as f:
+#             for event in out:
+#                 f.write( f"{event}\n" )
+#         if failed:
+#             f.write( f"########## FAILURE ##########\n" )
+#             f.write( f"{tstLog}\n" )
+#         print( f"Wrote {len(out)} lines to {outPath}!" )
+
+#     ## Change Back ##
+#     print( f"Switching from {dirPrefix} --to-> {lastdir}" )
+#     os.chdir( lastdir ) # Restore the current working directory
+#     ## Return Results ##
+#     return res
+
+
 def find_main( dirPrefix : str = "" ):
     """ Return the filename with the main function if it exists, Otherwise return None """
     res = run_cmd( f'grep -nir "main(" {dirPrefix}/*' )

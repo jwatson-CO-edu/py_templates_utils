@@ -17,10 +17,10 @@ This is to assist course staff in grading many student Java assignments in one s
 
 ### PMD, Static Analysis
 1. `cd /tmp/`
-1. `wget https://github.com/pmd/pmd/releases/download/pmd_releases%2F7.10.0/pmd-dist-7.10.0-bin.zip`
-1. `unzip pmd-dist-7.10.0-bin.zip`
-1. `sudo mv pmd-bin-7.10.0 /opt/`
-1. Add to "~/.bashrc": `alias pmd="/opt/pmd-bin-7.10.0/bin/pmd"`
+1. `wget https://github.com/pmd/pmd/releases/download/pmd_releases%2F7.21.0/pmd-dist-7.21.0-bin.zip`
+1. `unzip pmd-dist-7.21.0-bin.zip`
+1. `sudo mv pmd-bin-7.21.0 /opt/`
+1. Add to "~/.bashrc": `alias pmd="/opt/pmd-bin-7.21.0/bin/pmd"`
 
 ### IntelliJ IDEA, Editor
 1. Download the TAR
@@ -95,9 +95,16 @@ on each line.
         - Type [q] then [Enter] to quit the program immediately. (*NOTE*: Next run, execution will start from the beginning of the alphabet. There is no saved state.)
 
 # `DEV_PLAN`
-No pull requests are considered after 2025-05-10!
+No pull requests are considered after 2026-05-10!
 
 # Change Log
+* 2025-02-07: QoL Improvements
+   - Added an identifier review to help evaluate good naming conventions.
+   - Full output not captured and sent to the output directory
+   - Suppressed excessive error output from PMD.
+   - Added more tunable params for PMD.
+   - Retain each assignment's settings as its own nested dictionary.
+* 2025-02-03: Added a "Magic Number" scan! 
 * 2025-04-24: Display relative student contributions (by GitHub login), Fixed bug where including a URL argument in scraped address causes an infinite loop, QoL improvements, Editorial Changes
 * 2025-03-21: Added MacOS (Darwin) config data, IntelliJ path is now set as the first valid of a list of given options, Gradle tests work on some machines and not others! - Reason unknown!, Source files with a search term in their title will have the first `_SRCH_MARGN` lines of the file added to the summary, Corrected zero-based line numbers in summary, Timeout on summary generation
 * 2025-03-07: Order branches by most recent commit date rather than creation date, Report code block sizes, Functions are more tolerant to project structures that are both deeply nested **and** with directory names that are other than what was given by proctors
