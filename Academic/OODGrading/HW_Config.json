@@ -15,7 +15,7 @@
         "_EDITOR_COMMAND": "open -e"
     },
     "Settings": {
-        "_HW_TAG"        : "HW03",
+        "_HW_TAG"        : "HW04",
         "_LIST_PATHS"    : ["ugrads.txt", "grads.txt"],
         "_PMD_JAVA_RULES": "OOD_Java-Rules.xml",
         "_PMD_JAVA_VER"  : "21",
@@ -62,6 +62,14 @@
         "_TEST_DIR"  : "src/test/java/polymorphia",
         "_BRANCH_STR": "3",
         "_TOPIC_SRCH": ["inherit","hier","interface","encap","inject","depend","die","dice","print"],
+        "_TOPIC_XCLD": ["return"]
+    },
+    "HW04": {
+        "_SOURCE_DIR": "src/main/java/wordle",
+        "_TEST_DIR"  : "src/test/java/wordle",
+        "_XCLUDE_DIR": ["src/main/java/wordle/ui"],
+        "_BRANCH_STR": "4",
+        "_TOPIC_SRCH": ["abstract","interface","encap","respons","guess","library","defer","depend"],
         "_TOPIC_XCLD": ["return"]
     }
 }

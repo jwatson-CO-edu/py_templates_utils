@@ -63,6 +63,7 @@ try:
     ### Assignment ###
     _HW_TAG     = config["Settings"]["_HW_TAG"]
     _SOURCE_DIR = config[_HW_TAG]["_SOURCE_DIR"]
+    _XCLUDE_DIR = config[_HW_TAG]["_XCLUDE_DIR"] if ("_XCLUDE_DIR" in config[_HW_TAG]) else list()
     _TEST_DIR   = config[_HW_TAG]["_TEST_DIR"] 
     _BRANCH_STR = config[_HW_TAG]["_BRANCH_STR"]
     _TOPIC_SRCH = config[_HW_TAG]["_TOPIC_SRCH"]
@@ -166,9 +167,16 @@ def get_ordered_students( listPath ):
     return students
 
 
+def p_Canvas_group( stdntPair ):
+    return ("group" in stdntPair[0].lower()) or ("group" in stdntPair[1].lower())
+
+
 def get_student_str( stdntPair ):
     """ Get a prefix that orders the folders """
-    return f"{stdntPair[0].lower()}{stdntPair[1].lower()}"
+    if p_Canvas_group( stdntPair ):
+        return f"{stdntPair[1].lower()}{stdntPair[0].lower()}"
+    else:
+        return f"{stdntPair[0].lower()}{stdntPair[1].lower()}"
 
 
 def get_student_name( stdntPair ):
@@ -495,7 +503,7 @@ def split_lines_with_depth_change( nptStr : str ):
 
 
 def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : list[str], searchOver : int = 40,
-                                             excludeTerms : list[str] = None ):
+                                             excludeTerms : list[str] = None, pathNameHit = False ):
     """ Attempt to grab relevant portion of code """
     lines, lnDeltaDepth = split_lines_with_depth_change( javaSourceStr )
     N = len( lines )
@@ -520,7 +528,9 @@ def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : 
                 if xTerm in line_i:
                     hit = False
                     break
-        if hit:
+        if (hit or pathNameHit):
+            if pathNameHit:
+                pathNameHit = False
             blockDex = i
             ovrDpth  = 0
             for j in range( i, min( N, i+searchOver+1 ) ):
@@ -687,14 +697,20 @@ def p_number_str( num : str ) -> bool:
 
 ########## PROJECT / FILE STRUCTURE ################################################################
 
-def get_all_file_paths( directory ) -> list[str]:
+def get_all_file_paths( directory, exclusions : list[str] = _XCLUDE_DIR ) -> list[str]:
     """ Return a list of full leaf paths under directory, Recursive """
     # Source: https://www.google.com/search?client=firefox-b-1-lm&channel=entpr&q=python+list+of+paths+from+recursive+walk
     file_paths = []
     for dirpath, _, filenames in os.walk( directory ):
         for filename in filenames:
             file_path = os.path.join( dirpath, filename )
-            file_paths.append( file_path )
+            exclHit   = False
+            for exclude in exclusions:
+                if exclude in f"{file_path}":
+                    exclHit = True
+                    break
+            if not exclHit:
+                file_paths.append( file_path )
     return sorted( file_paths ) # Dir walking is NOT deterministic!
 
 
@@ -719,7 +735,13 @@ def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], search
         rtnStr += f"///// {path} /////\n"
         with open( path, 'r' ) as f_i:
             src_i = f"{f_i.read()}"
-            res_i = grab_identified_sections_of_java_source( src_i, searchTerms, searchOver, excludeTerms )
+            fHit  = False
+            for term in searchTerms:
+                if (term.lower() in path.lower()):
+                    fHit = True
+                    break
+
+            res_i = grab_identified_sections_of_java_source( src_i, searchTerms, searchOver, excludeTerms, pathNameHit = fHit )
             for j, chunk_j in enumerate( res_i['chunks'] ):
                 range_j = res_i['ranges'][j]
                 rtnStr += f"/// Lines: [{range_j[0]+1}, {range_j[1]}] ///\n"
