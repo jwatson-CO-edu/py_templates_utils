@@ -15,7 +15,7 @@
         "_EDITOR_COMMAND": "open -e"
     },
     "Settings": {
-        "_HW_TAG"        : "HW05",
+        "_HW_TAG"        : "HW06",
         "_LIST_PATHS"    : ["ugrads.txt", "grads.txt"],
         "_PMD_JAVA_RULES": "OOD_Java-Rules.xml",
         "_PMD_JAVA_VER"  : "21",
@@ -80,5 +80,14 @@
                         "artifact","treasure","food","move",
                         "knight","coward","glutton","demon","seeker"],
         "_TOPIC_XCLD": ["return"]
+    },
+    "HW06": {
+        "_SOURCE_DIR": "src/main/java/polymorphia",
+        "_TEST_DIR"  : "src/test/java/polymorphia",
+        "_BRANCH_STR": "6",
+        "_TOPIC_SRCH": ["@Given", "@And", "builder", 
+                        "grid", "ring", "line", "name", "connect", 
+                        "random", "sequen", "item", "artifact"],
+        "_TOPIC_XCLD": ["return", "string"]
     }
 }

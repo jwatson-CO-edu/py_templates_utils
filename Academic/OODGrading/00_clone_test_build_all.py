@@ -725,11 +725,17 @@ def get_all_EXT_paths( directory, fileExt : str = "java" ) -> list[str]:
 
 ########## CODE STRUCTURE ANALYSIS #################################################################
 
-def grab_identified_source_chunks( srcDir : str, searchTerms : list[str], searchOver : int = 40, fileExt : str = "java",
+def grab_identified_source_chunks( srcDir : str|list[str], searchTerms : list[str], searchOver : int = 40, fileExt : str = "java",
                                    excludeTerms : list[str] = None ):
     """ Get identified chunks in the code """
     rtnStr  = ""
-    jvPaths = get_all_EXT_paths( srcDir, fileExt )
+    if isinstance( srcDir, str ):
+        jvPaths = get_all_EXT_paths( srcDir, fileExt )
+    elif isinstance( srcDir, (list, deque,) ):
+        jvPaths = deque()
+        for src in srcDir:
+            jvPaths.extend( get_all_EXT_paths( src, fileExt ) )
+        jvPaths = list( jvPaths )
     exclude = excludeTerms if (excludeTerms is not None) else list()
     for path in jvPaths:
         rtnStr += f"///// {path} /////\n"
@@ -928,6 +934,11 @@ def report_identifiers_and_signatures( srcDir : str, fileExt : str = "java" ):
     return rtnStr
 
     
+
+########## GRADING CHECKLIST #######################################################################
+
+
+
 
 ########## UTILITIES && FEATURES ###################################################################
 
@@ -1173,8 +1184,16 @@ if __name__ == "__main__":
             print( f"About to fetch relevant code ..." )
             print( f"Include: {_TOPIC_SRCH}" )
             print( f"Exclude: {_TOPIC_XCLD}" )
-            sdtSrc = grab_identified_source_chunks( os.path.join( stdDir, _SOURCE_DIR ), _TOPIC_SRCH, _SRCH_MARGN, "java", 
-                                                    _TOPIC_XCLD )
+            sdtSrc = grab_identified_source_chunks( 
+                [
+                    os.path.join( stdDir, _SOURCE_DIR ),
+                    os.path.join( stdDir, _TEST_DIR   ),
+                ], 
+                _TOPIC_SRCH, 
+                _SRCH_MARGN, 
+                "java", 
+                _TOPIC_XCLD 
+            )
             stdSnp = f"{_REPORT_DIR}/{stdStr}_related_source.java"
             with open( stdSnp, 'w' ) as f:
                 f.write( sdtSrc )
