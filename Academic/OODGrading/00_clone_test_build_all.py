@@ -23,6 +23,9 @@ def path_exists_fallback( pathList : list[str] ) -> str:
     return None
 
 
+
+########## LOAD PARAMS FROM CONFIG #################################################################
+
 # Get all OS information in one tuple
 platform_info = platform.uname()
 print( f"Platform Information:" )
@@ -68,6 +71,7 @@ try:
     _BRANCH_STR = config[_HW_TAG]["_BRANCH_STR"]
     _TOPIC_SRCH = config[_HW_TAG]["_TOPIC_SRCH"]
     _TOPIC_XCLD = config[_HW_TAG]["_TOPIC_XCLD"]
+    _DISABL_TST = config[_HW_TAG]["_DISABL_TST"] if ("_DISABL_TST" in config[_HW_TAG]) else list()
     ### Report ###
     print()
     print( f"Default Gradle Path:  {_GRADLE_PATH}" )
@@ -97,6 +101,8 @@ class TColor:
 class Tee:
     """ Captures `stdout` to a file while still displaying it """
     # WARNING, CLAUDE SLOP: https://claude.ai/share/bf70a9b8-2f1e-4b02-b449-ffb541df59a9
+    origF = sys.stdout # Store this BEFORE the shenanigans begin!
+
 
     def set_alt_file( self, altPath = None ):
         """ Set the alternate file where text is redirected """
@@ -109,25 +115,23 @@ class Tee:
             if f is not None:
                 self.files.append(f)
 
+
     def attach( self ):
         """ Cache original `stdout` file and replace with self """
-        self.origF = sys.stdout
         sys.stdout = self
 
 
     def detach( self ): 
         """ Restore the original `stdout` file """
-        if self.origF is not None:
-            sys.stdout = self.origF
+        sys.stdout = Tee.origF
 
 
     def __init__( self, altPath = None ):
         """ Open file and attach """
-        self.files = [sys.stdout,]
-        self.origF = None
+        self.files = [Tee.origF,]
         self.set_alt_file( altPath )
         self.attach()
-        self.ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
+        self.ansi_escape = re.compile( r'\x1b\[[0-9;]*m' )
 
 
     def __del__( self ):
@@ -171,9 +175,9 @@ def p_Canvas_group( stdntPair ):
     return ("group" in stdntPair[0].lower()) or ("group" in stdntPair[1].lower())
 
 
-def get_student_str( stdntPair ):
+def get_student_str( stdntPair, reverse = False ):
     """ Get a prefix that orders the folders """
-    if p_Canvas_group( stdntPair ):
+    if p_Canvas_group( stdntPair ) or reverse:
         return f"{stdntPair[1].lower()}{stdntPair[0].lower()}"
     else:
         return f"{stdntPair[0].lower()}{stdntPair[1].lower()}"
@@ -1068,6 +1072,46 @@ def enable_all_tests( tstDir : str, fileExt : str = "java" ):
         print( f"\nEnabled {enTests} tests!\n" )
 
 
+def disable_keyword_tests_AND( tstDir : str, keywords : list[str], fileExt : str = "java" ):
+    """ Find all `@Disable`d tests and comment out the decorator """
+    jvPaths = [path for path in get_all_file_paths( tstDir ) if f".{fileExt}".lower() in str(path).lower()]
+    print( f"\nFound {len(jvPaths)} files in {tstDir}!" )
+    enTests   = 0
+    _TEST_DIR = "@Test"
+    _DISA_DIR = "@Disabled"
+    _IMPORT   = "import org.junit.jupiter.api.Disabled;\n"
+    for jPath in jvPaths:
+        wLines_i = deque()
+        rewrit_i = False
+        with open( jPath, 'r' ) as f_i:
+            lines_i  = f_i.readlines()
+            dirLnNo = None
+            nuDirLn = ""
+            for j, line_j in enumerate( lines_i ):
+                wLines_i.append( line_j )
+                if _TEST_DIR in line_j:
+                    dirLnNo = j
+                    nuDirLn = line_j.replace( _TEST_DIR, _DISA_DIR )
+                disable = True
+                for kw in keywords:
+                    if kw.lower() not in line_j.lower():
+                        disable = False
+                        break
+                if disable and (dirLnNo is not None):
+                    rewrit_i = True
+                    disable  = False
+                    wLines_i[ dirLnNo ] = nuDirLn
+                
+        if rewrit_i:
+            wLines_i.insert( 1, _IMPORT )
+            with open( jPath, 'w' ) as f_i:
+                for line_j in wLines_i:
+                    f_i.write( f"{line_j}" )
+            rewrit_i = False
+    if enTests:
+        print( f"\nEnabled {enTests} tests!\n" )
+
+
 
 ########## MAIN ####################################################################################
 
@@ -1087,6 +1131,8 @@ if __name__ == "__main__":
     for _LIST_PATH in _LIST_PATHS:
         disp_text_header( f"About to process {_LIST_PATH}!!", 10, preNL = 1, postNL = 1 )
         students = get_ordered_students( _LIST_PATH )
+        for student in students:
+            get_student_name( f"\t{student}" )
         Nstdnt   = len( students )
         Ngroup   = len( grPaths  )
         i        = 0
@@ -1101,24 +1147,28 @@ if __name__ == "__main__":
         if loopAction == 'break':
             i = Nstdnt
             print( f">>> SKIPPED {_LIST_PATH} !! >>>" )
+            continue
         
         # Begin normal list iteration
         while (i < Nstdnt) or (j < Ngroup):
             print( f"... Iteration {i+j} ..." )
-
+            captur = None 
             if (i < Nstdnt):
-
                 student = students[i]
 
                 ### Fetch Submission ###
                 stdStr = get_student_str( student )
+                revStr = get_student_str( student, reverse = True )
+                if 'group' not in student[1].lower():
+                    lstStr = student[0]
+                else:
+                    lstStr = 'INVALID'
                 stdNam = get_student_name( student )
                 stPath = None
-                captur = Tee( f"{_REPORT_DIR}/{stdStr}_full_report.txt" )
 
                 disp_text_header( f"Grading {stdNam} ...", 5, preNL = 1, postNL = 0 )
                 for hPath in htPaths:
-                    if stdStr in hPath:
+                    if (stdStr in hPath) or (revStr in hPath) or (lstStr in hPath):
                         stPath  = hPath
                         reverse = False
                         break
@@ -1131,22 +1181,20 @@ if __name__ == "__main__":
                     continue
                 
             elif (j < Ngroup):
-
                 ### Fetch Submission ###
                 stdStr = grPaths[j].split('/')[-1]
                 stdNam = stdStr
                 stPath = grPaths[j]
-                captur = Tee( f"{_REPORT_DIR}/{stdStr}_full_report.txt" )
 
                 if not reverse:
                     j += 1
                 else:
                     j -= 1
 
-
             ### Fetch Repo ###
             stAddr = scrape_repo_address( stPath )
             stdDir = get_folder_from_github_addr( stAddr )
+            captur = Tee( f"{_REPORT_DIR}/{stdStr}_full_report.txt" )
 
             print( f"About to clone {stAddr} to {stdDir}!" )
             clonRs = git_clone( stAddr )
@@ -1242,9 +1290,14 @@ if __name__ == "__main__":
 
             ### IntelliJ View ###
             if _INSPECT_J:
+                
                 ## Enable Tests for Coverage ##
                 if _EN_ALL_TST:
                     enable_all_tests( os.path.join( stdDir, _TEST_DIR), fileExt = "java" )
+                
+                ## Disable Tests for Graphics ##
+                if len( _DISABL_TST ):
+                    disable_keyword_tests_AND( os.path.join( stdDir, _TEST_DIR), _DISABL_TST, fileExt = "java" )
 
                 print( f"About to inspect Java project ..." )
                 inspect_project( dirPrefix = stdDir )
@@ -1264,6 +1317,7 @@ if __name__ == "__main__":
             
             i += stateChange['iDelta']
 
+            captur.detach()
             captur = None
 
         disp_text_header( f"COMPLETED {_LIST_PATH}!!", 10, preNL = 1, postNL = 2 )
