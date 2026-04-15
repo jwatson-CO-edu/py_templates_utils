@@ -70,6 +70,7 @@ try:
     _TEST_DIR   = config[_HW_TAG]["_TEST_DIR"] 
     _BRANCH_STR = config[_HW_TAG]["_BRANCH_STR"]
     _TOPIC_SRCH = config[_HW_TAG]["_TOPIC_SRCH"]
+    _ALERT_SRCH = config[_HW_TAG]["_ALERT_SRCH"] if ("_ALERT_SRCH" in config[_HW_TAG]) else None
     _TOPIC_XCLD = config[_HW_TAG]["_TOPIC_XCLD"]
     _DISABL_TST = config[_HW_TAG]["_DISABL_TST"] if ("_DISABL_TST" in config[_HW_TAG]) else list()
     ### Report ###
@@ -507,7 +508,7 @@ def split_lines_with_depth_change( nptStr : str ):
 
 
 def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : list[str], searchOver : int = 40,
-                                             excludeTerms : list[str] = None, pathNameHit = False ):
+                                             excludeTerms : list[str] = None, pathNameHit = False, alertTerms : list[str] = None  ):
     """ Attempt to grab relevant portion of code """
     lines, lnDeltaDepth = split_lines_with_depth_change( javaSourceStr )
     N = len( lines )
@@ -518,12 +519,16 @@ def grab_identified_sections_of_java_source( javaSourceStr : str, searchTerms : 
         "chunks" : list(),
         "ranges" : list(),
     }
+    totalTerms = searchTerms[:]
+    if alertTerms is not None:
+        totalTerms.extend( alertTerms )
     for i, line_i in enumerate( lines ):
         if i in covered:
             continue
         depth += lnDeltaDepth[i]
         hit = False
-        for sTerm in searchTerms:
+        # for sTerm in searchTerms:
+        for sTerm in totalTerms:
             if sTerm in line_i:
                 hit = True
                 break
@@ -730,7 +735,7 @@ def get_all_EXT_paths( directory, fileExt : str = "java" ) -> list[str]:
 ########## CODE STRUCTURE ANALYSIS #################################################################
 
 def grab_identified_source_chunks( srcDir : str|list[str], searchTerms : list[str], searchOver : int = 40, fileExt : str = "java",
-                                   excludeTerms : list[str] = None ):
+                                   excludeTerms : list[str] = None, alertTerms : list[str] = None ):
     """ Get identified chunks in the code """
     rtnStr  = ""
     if isinstance( srcDir, str ):
@@ -741,6 +746,9 @@ def grab_identified_source_chunks( srcDir : str|list[str], searchTerms : list[st
             jvPaths.extend( get_all_EXT_paths( src, fileExt ) )
         jvPaths = list( jvPaths )
     exclude = excludeTerms if (excludeTerms is not None) else list()
+    totalTerms = searchTerms[:]
+    if alertTerms is not None:
+        totalTerms.extend( alertTerms )
     for path in jvPaths:
         rtnStr += f"///// {path} /////\n"
         with open( path, 'r' ) as f_i:
@@ -751,29 +759,47 @@ def grab_identified_source_chunks( srcDir : str|list[str], searchTerms : list[st
                     fHit = True
                     break
 
-            res_i = grab_identified_sections_of_java_source( src_i, searchTerms, searchOver, excludeTerms, pathNameHit = fHit )
+            res_i = grab_identified_sections_of_java_source( src_i, searchTerms, searchOver, excludeTerms, 
+                                                             pathNameHit = fHit, alertTerms = alertTerms )
             for j, chunk_j in enumerate( res_i['chunks'] ):
                 range_j = res_i['ranges'][j]
                 rtnStr += f"/// Lines: [{range_j[0]+1}, {range_j[1]}] ///\n"
                 for k, line_k in enumerate( chunk_j ):
                     found = False
+                    alert = False
                     kWord = ""
+                    aWord = ""
+
                     for term in searchTerms:
                         if term.lower() in f"{line_k}".lower():
                             found = True
                             kWord = term
                             break
+
+                    if alertTerms is not None:
+                        for term in alertTerms:
+                            if term.lower() in f"{line_k}".lower():
+                                alert = True
+                                aWord = term
+                                break
+
                     if found:
                         for term in exclude:
                             if term.lower() in f"{line_k}".lower():
                                 found = False
+                                alert = False
                                 break
-                    rtnStr += f"/*{range_j[0]+k+1: 4}*/\t{line_k}{f' // << kw: {kWord} <<' if found else ''}\n"
+                            
+                    rtnStr += f"/*{range_j[0]+k+1: 4}*/\t{line_k}{f' // << kw: {kWord} <<' if found else ''}"
+                    rtnStr += f" // <---- !!!!! ALERT: {aWord} !!!!!" if alert else ''
+                    rtnStr += '\n'
+
                 rtnStr += f"\n"
             if not len( res_i['chunks'] ):
                 found = False
                 kWord = ""
-                for term in searchTerms:
+                # for term in searchTerms:
+                for term in totalTerms:
                     if term.lower() in f"{path}".lower():
                         found = True
                         kWord = term
@@ -1231,6 +1257,7 @@ if __name__ == "__main__":
             ### Gather Snippets ###
             print( f"About to fetch relevant code ..." )
             print( f"Include: {_TOPIC_SRCH}" )
+            print( f"ALERT:   {_ALERT_SRCH}" )
             print( f"Exclude: {_TOPIC_XCLD}" )
             sdtSrc = grab_identified_source_chunks( 
                 [
@@ -1240,7 +1267,8 @@ if __name__ == "__main__":
                 _TOPIC_SRCH, 
                 _SRCH_MARGN, 
                 "java", 
-                _TOPIC_XCLD 
+                _TOPIC_XCLD,
+                alertTerms = _ALERT_SRCH
             )
             stdSnp = f"{_REPORT_DIR}/{stdStr}_related_source.java"
             with open( stdSnp, 'w' ) as f:

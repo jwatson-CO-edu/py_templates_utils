@@ -15,7 +15,7 @@
         "_EDITOR_COMMAND": "open -e"
     },
     "Settings": {
-        "_HW_TAG"        : "HW08",
+        "_HW_TAG"        : "HW09",
         "_LIST_PATHS"    : ["ugrads.txt", "grads.txt"],
         "_PMD_JAVA_RULES": "OOD_Java-Rules.xml",
         "_PMD_JAVA_VER"  : "21",
@@ -104,10 +104,19 @@
         "_SOURCE_DIR": "src/main/java/polymorphia",
         "_TEST_DIR"  : "src/test/java/polymorphia",
         "_BRANCH_STR": "8",
-        "_TOPIC_SRCH": ["hiccup",
+        "_TOPIC_SRCH": ["Hiccup",
                         "strat", "exec", "command", "cmd", "map", "change",  
                         "Knight", "Seeker", "Fighter", "Coward", "Glutton", "Demon",
                         "selectAction", "CharacterFactory"],
         "_TOPIC_XCLD": ["return", "HashMap", "mapToObj"]
+    },
+    "HW09": {
+        "_SOURCE_DIR": "src/main/java/polymorphia",
+        "_TEST_DIR"  : "src/test/java/polymorphia",
+        "_BRANCH_STR": "9",
+        "_ALERT_SRCH": ["Hiccup"],
+        "_TOPIC_SRCH": ["DecoratedCharacter", "CharacterFactory", "CommandFactory",
+                        "Armor", "Weapon", "Reincarn", "command"],
+        "_TOPIC_XCLD": ["return"]
     }
 }
